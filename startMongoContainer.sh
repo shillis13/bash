@@ -1,0 +1,3 @@
+#!/usr/local/bin/bash
+
+docker run -d -u mongoDbUser mongo --name mongo-container --network host -v /data/db:/data/db -v /data/configdb:/data/configdb             -v /etc/ssl/mongo:/etc/ssl/mongo -e MONGO_INITDB_ROOT_USERNAME=mongoDbUser             -e MONGO_INITDB_ROOT_PASSWORD=mongoDbUser -e MONGO_INITDB_DATABASE=rocketchat             -e MONGO_URL=mongodb://mongoDbUser:mongoDbUser@rchat-lb.tessting.org:20717/rocketchat -e ROOT_URL=https://rchat-lb.tessting.org             -e PORT=20717 -e MONGO_OPLOG_URL=mongodb://mongoDbUser:@localhost:20717/local             mongo:4.4.15  --tlsMode requireTLS --tlsCertificateKeyFile /etc/ssl/mongo/mongo.pem --tlsCAFile /etc/ssl/mongo/ca.pem --storageEngine wiredTiger --enableFreeMonitoring runtime
