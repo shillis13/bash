@@ -1,0 +1,4 @@
+[ALWAYS] PASS: Log level 'none' filtered messages correctly.
+*** COMPREHENSIVE LOGGING TEST END ***
+[ALWAYS] Result for test_logging: PASS
+[ALWAYS] Result for test_grep: PASS

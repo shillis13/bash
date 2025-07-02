@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# # This script is a collection of live examples to demonstrate how to use the
+# 'rename' command. It creates a temporary sandbox of files, runs various
+# rename operations, shows the results, and then cleans up after itself.
+
 # Create a temporary directory
 TIMESTAMP=$(date +"%Y%m%d%H%M%S")
 TEMP_DIR=~/Downloads/tmp_$TIMESTAMP
