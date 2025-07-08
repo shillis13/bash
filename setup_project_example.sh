@@ -10,7 +10,7 @@
 # --- Sourcing the Library ---
 # Sourcing the main library file, which handles its own dependencies.
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
-source "$SCRIPT_DIR/lib/lib_main.sh"
+source "$SCRIPT_DIR/libs/lib_main.sh"
 
 
 # ==============================================================================
@@ -39,7 +39,7 @@ define_arguments() {
 handle_directory() {
     local pName="$1"
     local exec_flag="$2"
-    log_info "Setting up project directory..."
+    log -info "Setting up project directory..."
     runCommand "$exec_flag" "$ON_ERR_EXIT" "mkdir -p \"$pName\""
 }
 
@@ -48,10 +48,10 @@ handle_git() {
     local repoUrl="$2"
     local exec_flag="$3"
     if [[ -n "$repoUrl" ]]; then
-        log_info "Cloning git repository from $repoUrl..."
+        log -info "Cloning git repository from $repoUrl..."
         runCommand "$exec_flag" "$ON_ERR_EXIT" "git clone \"$repoUrl\" \"$pName\""
     else
-        log_warn "No git repository URL provided. Creating placeholder README."
+        log -warn "No git repository URL provided. Creating placeholder README."
         runCommand "$exec_flag" "$ON_ERR_EXIT" "touch \"$pName/README.md\""
     fi
 }
@@ -64,17 +64,17 @@ handle_dependencies() {
     local -a pkgs=("$@")
 
     if [[ "$skip" == "true" ]]; then
-        log_instr "Skipping dependency installation as requested."
+        log -Info "Skipping dependency installation as requested."
         return
     fi
 
-    log_info "Processing dependencies..."
+    log -info "Processing dependencies..."
     if (( ${#pkgs[@]} > 0 )); then
         for pkg in "${pkgs[@]}"; do
             runCommand "$exec_flag" "$ON_ERR_CONT" "echo \"$pkg\" >> \"$pName/requirements.txt\""
         done
     else
-        log_warn "No packages specified with the -p flag."
+        log -warn "No packages specified with the -p flag."
         runCommand "$exec_flag" "$ON_ERR_EXIT" "echo '# No packages specified' > \"$pName/requirements.txt\""
     fi
 }

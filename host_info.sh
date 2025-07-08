@@ -44,59 +44,59 @@ define_arguments() {
 
 # --- Data Gathering Functions ---
 get_os_info() {
-    log_instr "--- System Information ---"
+    log --info "--- System Information ---"
     if [[ "$(uname)" == "Linux" ]]; then
-        log_instr "OS Info:"
-        log_instr "$(lsb_release -a 2>/dev/null || cat /etc/os-release)"
+        log --info "OS Info:"
+        log --info "$(lsb_release -a 2>/dev/null || cat /etc/os-release)"
     else # macOS
-        log_instr "OS Info:"
-        log_instr "$(sw_vers)"
+        log --info "OS Info:"
+        log --info "$(sw_vers)"
     fi
-    log_instr "Uptime: $(uptime)"
+    log --info "Uptime: $(uptime)"
 }
 
 get_cpu_info() {
-    log_instr "" # Add spacing
-    log_instr "--- CPU Information ---"
+    log --info "" # Add spacing
+    log --info "--- CPU Information ---"
     if [[ "$(uname)" == "Linux" ]]; then
         local num_cores; num_cores=$(nproc)
         local load; load=$(cut -d' ' -f1 < /proc/loadavg)
         local load_color; load_color=$(format_color_by_threshold "$load" "$num_cores" "$((num_cores * 2))")
-        log_instr "Load Average (1m): ${load_color}${load}${Color_Reset} / ${num_cores}.0 cores"
+        log --info "Load Average (1m): ${load_color}${load}${Color_Reset} / ${num_cores}.0 cores"
         log_debug "  (Load per core. Green < 1.0, Yellow >= 1.0, Red >= 2.0)"
 
         local cpu_usage; cpu_usage=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1}')
         local usage_color; usage_color=$(format_color_by_threshold "$cpu_usage" 75 90)
-        log_instr "CPU Usage:         ${usage_color}${cpu_usage}%${Color_Reset}"
+        log --info "CPU Usage:         ${usage_color}${cpu_usage}%${Color_Reset}"
         log_debug "  (Total CPU utilization across all cores)"
 
     else # macOS
         local num_cores; num_cores=$(sysctl -n hw.ncpu)
         local load; load=$(sysctl -n vm.loadavg | awk '{print $2}')
         local load_color; load_color=$(format_color_by_threshold "$load" "$num_cores" "$((num_cores * 2))")
-        log_instr "Load Average (1m): ${load_color}${load}${Color_Reset} / ${num_cores}.0 cores"
+        log --info "Load Average (1m): ${load_color}${load}${Color_Reset} / ${num_cores}.0 cores"
         log_debug "  (Load per core. Green < 1.0, Yellow >= 1.0, Red >= 2.0)"
 
         local idle; idle=$(top -l 1 | grep 'CPU usage' | awk '{print $7}' | cut -d'%' -f1)
         local usage; usage=$(echo "100 - $idle" | bc)
         local usage_color; usage_color=$(format_color_by_threshold "$usage" 75 90)
-        log_instr "CPU Usage:         ${usage_color}${usage}%${Color_Reset}"
+        log --info "CPU Usage:         ${usage_color}${usage}%${Color_Reset}"
         log_debug "  (Total CPU utilization across all cores)"
     fi
 }
 
 get_mem_info() {
-    log_instr "" # Add spacing
-    log_instr "--- Memory Information ---"
+    log --info "" # Add spacing
+    log --info "--- Memory Information ---"
     if [[ "$(uname)" == "Linux" ]]; then
-        log_instr "Memory Usage:"
-        log_instr "$(free -h)"
+        log --info "Memory Usage:"
+        log --info "$(free -h)"
     else # macOS
         local page_size; page_size=$(sysctl -n hw.pagesize)
         local total_mem_gb; total_mem_gb=$(sysctl -n hw.memsize | awk '{print $1/1024/1024/1024" GB"}')
-        log_instr "Total Physical Memory: $total_mem_gb"
-        log_instr ""
-        log_instr "macOS Memory Breakdown (page size: $(printf "%'d" "$page_size") bytes):"
+        log --info "Total Physical Memory: $total_mem_gb"
+        log --info ""
+        log --info "macOS Memory Breakdown (page size: $(printf "%'d" "$page_size") bytes):"
         log_debug "  (macOS actively uses 'inactive' memory as cache; low 'free' pages is normal)"
 
         # --- Two-Pass Approach for Perfect Alignment ---
@@ -151,8 +151,8 @@ main() {
     get_os_info
     get_cpu_info
     get_mem_info
-    log_instr ""
-    log_instr "✅ Host info gathering complete."
+    log --info ""
+    log --info "✅ Host info gathering complete."
 }
 
 # --- Main Execution Guard ---
