@@ -17,7 +17,7 @@ lib_require "lib_logging.sh"
 # ==============================================================================
 declare -g -r GREP_REGEX_IPV4='([0-9]{1,3}\.){3}[0-9]{1,3}'
 declare -g -r GREP_REGEX_DATE_YMD='[0-9]{4}-[0-9]{2}-[0-9]{2}' # yyyy-MM-DD
-declare -g -r GREP_REGEX_DATE_COMMONLOG='[0-9]{2}/[A-Z][a-z]{2}/[0-9]{4}' # DD/Mon/YYYY
+declare -g -r GREP_REGEX_DATE_DDMMMYYYY='[0-9]{2}/[A-Z][a-z]{2}/[0-9]{4}' # DD/Mon/YYYY
 declare -g -r GREP_REGEX_TIME_24H='[0-9]{2}:[0-9]{2}:[0-9]{2}' # HH:MM:SS
 
 
@@ -63,7 +63,7 @@ grepDates() {
 
     log --info "Searching for multiple date formats in '$1'..."
     while IFS= read -r line; do
-        if [[ "$line" =~ $GREP_REGEX_DATE_YMD ]] || [[ "$line" =~ $GREP_REGEX_DATE_COMMONLOG ]]; then
+        if [[ "$line" =~ $GREP_REGEX_DATE_YMD ]] || [[ "$line" =~ $GREP_REGEX_DATE_DDMMMYYYY ]]; then
             echo "$line"
         fi
     done < "$input_file"

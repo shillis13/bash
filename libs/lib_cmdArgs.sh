@@ -122,7 +122,7 @@ libCmd_usage() {
 
         local formatted_line
         formatted_line=$(printf "  %-25s %s" "$flags" "$usage")
-        log_msg_only "$formatted_line"
+        log -MsgOnly "$formatted_line"
     done
 }
 

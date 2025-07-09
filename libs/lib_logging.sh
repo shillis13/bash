@@ -1,113 +1,263 @@
 #!/usr/bin/env bash
+#
+# ==============================================================================
+# LIBRARY: lib_logging.sh
+#
+# DESCRIPTION: A logging library with bitmask levels, color, and file support.
+#
+# REQUIREMENTS:
+#   - lib_colors.sh
+# ==============================================================================
 
-# Part of the 'lib' suite.
-# Provides a standardized logging framework, modeled after Logging.ps1.
-
-# Sourcing Guard
-filename="$(basename "${BASH_SOURCE[0]}")"
-isSourcedName="sourced_${filename/./_}"
-if declare -p "$isSourcedName" > /dev/null 2>&1; then return 1; else declare -g "$isSourcedName=true"; fi
+# --- Guard ---
+[[ -z "$LIB_LOGGING_LOADED" ]] && readonly LIB_LOGGING_LOADED=1 || return 0
 
 # --- Dependencies ---
-source "$(dirname "${BASH_SOURCE[0]}")/lib_thisFile.sh"
+# This check ensures we can source dependencies even if this script is sourced
+# from a different directory.
+LIB_LOGGING_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+if [[ -f "$LIB_LOGGING_DIR/lib_colors.sh" ]]; then
+    source "$LIB_LOGGING_DIR/lib_colors.sh"
+fi
 
-# --- Global Logging Configuration ---
-declare -g -r -A LOG_LEVELS=([entryexit]=1 [debug]=2 [info]=3 [warn]=4 [error]=5 [none]=6)
-declare -g -l -x current_logging_level="warn"
-declare -g -x g_log_file_path=""
+# ==============================================================================
+# GLOBALS
+# ==============================================================================
 
-# --- Initialization Function ---
-lib_logging_initialize() {
-    lib_require "lib_colors.sh"
-    fcn_init_colors
-    libCmd_add -t value -f l --long log-level -v "logLevel" -m once \
-        -u "Sets verbosity. One of: entryexit, debug, info, warn, error, none."
-    libCmd_add -t value --long log-file -v "logFile" -m once \
-        -u "Redirect all log output to a specified file."
+# --- Log Levels (Powers of Two for Bitmasking) ---
+readonly g_log_lvl_none=0
+readonly g_log_lvl_error=1
+readonly g_log_lvl_warn=2
+readonly g_log_lvl_instr=4
+readonly g_log_lvl_info=8
+readonly g_log_lvl_debug=16
+readonly g_log_lvl_entryexit=32
+readonly g_log_lvl_all=63 # Sum of all levels above
+
+# --- Configuration Globals ---
+g_log_level=${g_log_lvl_info} # Default numeric level
+g_log_level_str="Info"         # Default string for the command-line arg
+g_log_file=""
+g_log_show_color=true
+
+# --- Log Colors ---
+c_error="${c_bold}${c_red}"
+c_instr="${c_bold}${c_magenta}"
+c_warn="${c_bold}${c_yellow}"
+c_info="${c_bold}${c_green}"
+c_debug="${c_cyan}"
+c_entryexit="${c_blue}"
+
+# ==============================================================================
+# FUNCTIONS
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# FUNCTION: libLogging_define_arguments
+#
+# DESCRIPTION: Defines command-line arguments for logging functionality.
+# ------------------------------------------------------------------------------
+libLogging_define_arguments() {
+    libCmd_add -t value --long logLevel -v "g_log_level_str" -d "Info" -m once -u "Set the logging level (None, Error, Warn, Info, Debug, All)."
+    libCmd_add -t value --long logFile   -v "g_log_file"      -r n     -m once -u "Redirect all log output to the specified file."
 }
 
-# --- Core Logging Functions ---
-set_log_level() {
-    local new_level="$1"
-    # If called with no argument, try to use the global $logLevel from the cmd line parser.
-    if [[ -z "$new_level" ]] && [[ -n "$logLevel" ]]; then
-        new_level="$logLevel"
-    fi
-
-    if [[ -n "$new_level" ]] && [[ -n "${LOG_LEVELS[$new_level]}" ]]; then
-        current_logging_level=$new_level
-    fi
+# ------------------------------------------------------------------------------
+# FUNCTION: libLogging_apply_args
+#
+# DESCRIPTION: Applies logic based on parsed logging arguments.
+# ------------------------------------------------------------------------------
+libLogging_apply_args() {
+    log_set_level_from_string "$g_log_level_str"
 }
 
-set_log_file() {
-    local new_log_file="$1"
-    # If called with no argument, try to use the global $logFile from the cmd line parser.
-    if [[ -z "$new_log_file" ]] && [[ -n "$logFile" ]]; then
-        new_log_file="$logFile"
-    fi
-
-    if [[ -n "$new_log_file" ]]; then
-        g_log_file_path="$new_log_file"
-        mkdir -p "$(dirname "$g_log_file_path")"
-        >"$g_log_file_path" # Clear the log file for the session
-    fi
+# ------------------------------------------------------------------------------
+# FUNCTION: log_level_to_string
+# DESCRIPTION: Converts a log level number to its string representation.
+# ------------------------------------------------------------------------------
+log_level_to_string() {
+    case $1 in
+        $g_log_lvl_error)     echo "ERROR";;
+        $g_log_lvl_warn)      echo "WARN";;
+        $g_log_lvl_instr)     echo "INSTR";;
+        $g_log_lvl_info)      echo "INFO";;
+        $g_log_lvl_debug)     echo "DEBUG";;
+        $g_log_lvl_entryexit) echo "TRACE";;
+        *)                    echo "UNKNOWN";;
+    esac
 }
 
-log_message() {
-    local level="$1"; shift
-    local -i msg_log_value=${LOG_LEVELS[$level]:-0}
-    local -i current_logging_value=${LOG_LEVELS[$current_logging_level]:-4}
-
-    if (( msg_log_value >= current_logging_value )); then
-        local caller_info="$1"; shift
-        local message
-        local color_var="Color_${level^}"
-        local color=${!color_var:-}
-        message="[${level^^}] [${caller_info}] $@"
-
-        if [[ -n "$g_log_file_path" ]]; then
-            printf "%s\n" "$message" >> "$g_log_file_path"
-        fi
-        printf "%s%s%s\n" "$color" "$message" "${Color_Reset:-}" >&2
-    fi
+# ------------------------------------------------------------------------------
+# FUNCTION: log_level_from_string
+# DESCRIPTION: Converts a log level string to its numeric value.
+# ------------------------------------------------------------------------------
+log_level_from_string() {
+    local level_str
+    level_str=$(echo "$1" | tr '[:lower:]' '[:upper:]')
+    case "$level_str" in
+        "NONE")      echo $g_log_lvl_none;;
+        "ERROR")     echo $g_log_lvl_error;;
+        "WARN")      echo $((g_log_lvl_error | g_log_lvl_warn));;
+        "INSTR")     echo $((g_log_lvl_error | g_log_lvl_warn | g_log_lvl_instr));;
+        "INFO")      echo $((g_log_lvl_error | g_log_lvl_warn | g_log_lvl_instr | g_log_lvl_info));;
+        "DEBUG")     echo $((g_log_lvl_error | g_log_lvl_warn | g_log_lvl_instr | g_log_lvl_info | g_log_lvl_debug));;
+        "ENTRYEXIT") echo $g_log_lvl_all;;
+        "ALL")       echo $g_log_lvl_all;;
+        *)           echo $g_log_lvl_info;; # Default
+    esac
 }
 
-# PRIMARY LOG FUNCTION
+# ------------------------------------------------------------------------------
+# FUNCTION: log_set_level_from_string
+# DESCRIPTION: Sets the global log level from a string.
+# ------------------------------------------------------------------------------
+log_set_level_from_string() {
+    g_log_level=$(log_level_from_string "$1")
+}
+
+# ------------------------------------------------------------------------------
+# FUNCTION: _log_get_metadata
+#
+# DESCRIPTION:
+#   An internal, extensible function to generate the metadata prefix for a
+#   log message.
+#
+# PARAMETERS:
+#   $1 (integer): The log level of the message.
+#   $2 (integer): The stack frame index of the original caller.
+# ------------------------------------------------------------------------------
+_log_get_metadata() {
+    local level=$1
+    local caller_idx=$2
+    local meta_str=""
+
+    # 1. Timestamp
+    meta_str+=$(date +"[%Y-%m-%d %H:%M:%S] ")
+
+    # 2. Log Level Tag
+    local level_tag
+    level_tag=$(log_level_to_string "$level")
+    meta_str+="[${level_tag}] "
+
+    # 3. Caller Info (File, Line, Function)
+    local func_name="${FUNCNAME[$caller_idx]}"
+    local line_num="${BASH_LINENO[$((caller_idx-1))]}"
+    local file_name
+    file_name=$(basename "${BASH_SOURCE[$caller_idx]}")
+
+    if [[ -z "$func_name" || "$func_name" == "main" || "$func_name" == "source" ]]; then
+        func_name="<script>"
+    else
+        func_name="${func_name}()"
+    fi
+    meta_str+="[${file_name}:${line_num} ${func_name}] "
+
+    echo "$meta_str"
+}
+
+# ------------------------------------------------------------------------------
+# FUNCTION: log
+#
+# DESCRIPTION:
+#   The core logging function. Prints a formatted message to stderr and/or a
+#   log file based on a bitmask level check.
+#
+# USAGE:
+#   log <LEVEL> [-MsgOnly] [-Always] "My message"
+# ------------------------------------------------------------------------------
 log() {
-    local level="info"; local message=""; local -a passthrough_args=()
-    while (( "$#" )); do
+    local level=$1
+    shift
+    local msg_only=false
+    local always=false
+
+    # Parse flags
+    while true; do
         case "$1" in
-            --error) level="error"; shift ;;
-            --warn) level="warn"; shift ;;
-            --info) level="info"; shift ;;
-            --debug) level="debug"; shift ;;
-            --entryexit) level="entryexit"; shift ;;
-            *) passthrough_args+=("$1"); shift ;;
+            -MsgOnly) msg_only=true; shift;;
+            -Always)  always=true;   shift;;
+            *) break;;
         esac
     done
-    message="${passthrough_args[*]}"
-    log_message "$level" "$(thisCaller):${BASH_LINENO[1]}" "$message"
+
+    # Check if the message should be logged
+    if [[ "$always" == true || ((g_log_level & level)) -ne 0 ]]; then
+        local msg="$*"
+        local out_str=""
+        local file_out_str=""
+
+        if [[ "$msg_only" == true ]]; then
+            out_str="$msg"
+            file_out_str="$msg"
+        else
+            # Determine the correct caller index on the stack
+            local caller_idx=1
+            if [[ "${FUNCNAME[1]}" == "log_entry" || "${FUNCNAME[1]}" == "log_exit" || "${FUNCNAME[1]}" == "log_banner" ]]; then
+                caller_idx=2
+            fi
+
+            # Get metadata and append the message
+            file_out_str=$(_log_get_metadata "$level" "$caller_idx")
+            file_out_str+="$msg"
+            out_str="$file_out_str"
+
+            # Add color for console output if enabled
+            if [[ "$g_log_show_color" == true ]]; then
+                local color
+                case $level in
+                    $g_log_lvl_error)     color="$c_error";;
+                    $g_log_lvl_warn)      color="$c_warn";;
+                    $g_log_lvl_instr)     color="$c_instr";;
+                    $g_log_lvl_info)      color="$c_info";;
+                    $g_log_lvl_debug)     color="$c_debug";;
+                    $g_log_lvl_entryexit) color="$c_entryexit";;
+                esac
+                out_str="${color}${out_str}${c_reset}"
+            fi
+        fi
+
+        # Print to stderr and file
+        echo -e "$out_str" >&2
+        if [[ -n "$g_log_file" ]]; then
+            echo -e "$file_out_str" >> "$g_log_file"
+        fi
+    fi
 }
 
-# --- Utility Functions ---
-log_always() {
-    local message="[ALWAYS] $*"
-    if [[ -n "$g_log_file_path" ]]; then printf "%s\n" "$message" >> "$g_log_file_path"; fi
-    printf "%s%s%s\n" "${Color_Success:-}" "$message" "${Color_Reset:-}" >&2
-}
-
+# ------------------------------------------------------------------------------
+# FUNCTION: log_banner
+# DESCRIPTION: Prints a message inside a highly visible banner.
+# ------------------------------------------------------------------------------
 log_banner() {
-    local message="*** $* ***"
-    if [[ -n "$g_log_file_path" ]]; then printf "%s\n" "$message" >> "$g_log_file_path"; fi
-    printf "%s%s%s\n" "${Color_Instr:-}" "$message" "${Color_Reset:-}" >&2
+    local msg=" $1 "
+    local banner_width=80
+    local banner_char="#"
+    local banner
+    banner=$(printf "%*s" "$banner_width" "")
+    banner=${banner// /$banner_char}
+
+    # Banners should always be visible
+    log $g_log_lvl_info -Always -MsgOnly "$banner"
+    log $g_log_lvl_info -Always -MsgOnly "$msg"
+    log $g_log_lvl_info -Always -MsgOnly "$banner"
 }
 
-entryexit_fcn() {
-    local func_name="$1"; shift
-    log_message "entryexit" "$(thisCaller):${BASH_LINENO[1]}" "Enter: $func_name $@"
-    "$func_name" "$@"
-    local return_code=$?
-    log_message "entryexit" "$(thisCaller):${BASH_LINENO[1]}" "Exit: $func_name (returned: $return_code)"
-    return $return_code
+# ------------------------------------------------------------------------------
+# FUNCTION: log_entry / log_exit
+# DESCRIPTION: Convenience functions for tracing function entry and exit.
+# ------------------------------------------------------------------------------
+log_entry() {
+    log $g_log_lvl_entryexit "--> ENTER: ${FUNCNAME[1]}"
 }
+
+log_exit() {
+    log $g_log_lvl_entryexit "<-- EXIT:  ${FUNCNAME[1]}"
+}
+
+# --- Self-Registration ---
+# Register hooks with the main library to be called at the correct time.
+if function_exists "lib_register_hooks"; then
+    lib_register_hooks --define libLogging_define_arguments --apply libLogging_apply_args
+fi
+
 
