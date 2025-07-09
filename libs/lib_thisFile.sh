@@ -9,8 +9,8 @@ isSourcedName="sourced_${filename//./_}"
 if declare -p "$isSourcedName" > /dev/null 2>&1; then return 1; else declare -g "$isSourcedName=true"; fi
 
 # Global variable for the library path
-declare -g g_lib_dir
-g_lib_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+#declare -g g_lib_dir
+#g_lib_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 
 # Centralized dependency loader function
 lib_require() {

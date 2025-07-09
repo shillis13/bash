@@ -207,9 +207,9 @@ libStack_prettyPrint() {
         IFS=':' read -r file line func <<< "$frame"
 
         local p_file p_func p_line
-        p_file=$(libFormat_padText "$file" "$max_file" "left" " ")
-        p_func=$(libFormat_padText "$func" "$max_func" "left" " ")
-        p_line=$(libFormat_padText "$line" "$max_line" "right" " ")
+        p_file=$(PadText "$file" "$max_file" "left" " ")
+        p_func=$(PadText "$func" "$max_func" "left" " ")
+        p_line=$(PadText "$line" "$max_line" "right" " ")
 
         if $use_color; then
             printf "%s%s%s  %s%s%s  %s%s%s\n" "${c_yellow}" "$p_file" "${c_reset}" "${c_green}" "$p_func" "${c_reset}" "${c_cyan}" "$p_line" "${c_reset}"

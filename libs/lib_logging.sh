@@ -25,20 +25,20 @@ fi
 # ==============================================================================
 
 # --- Log Levels (Powers of Two for Bitmasking) ---
-readonly g_log_lvl_none=0
-readonly g_log_lvl_error=1
-readonly g_log_lvl_warn=2
-readonly g_log_lvl_instr=4
-readonly g_log_lvl_info=8
-readonly g_log_lvl_debug=16
-readonly g_log_lvl_entryexit=32
-readonly g_log_lvl_all=63 # Sum of all levels above
+readonly LogLvl_None=0
+readonly LogLvl_Error=1
+readonly LogLvl_Warn=2
+readonly LogLvl_Instr=4
+readonly LogLvl_Info=8
+readonly LogLvl_Debug=16
+readonly LogLvl_Entryexit=32
+readonly LogLvl_All=63 # Sum of all levels above
 
 # --- Configuration Globals ---
-g_log_level=${g_log_lvl_info} # Default numeric level
-g_log_level_str="Info"         # Default string for the command-line arg
-g_log_file=""
-g_log_show_color=true
+LogLevel=${LogLvl_Info} # Default numeric level
+LogLevelStr="Info"         # Default string for the command-line arg
+LogFile=""
+LogShowColor=true
 
 # --- Log Colors ---
 c_error="${c_bold}${c_red}"
@@ -58,8 +58,8 @@ c_entryexit="${c_blue}"
 # DESCRIPTION: Defines command-line arguments for logging functionality.
 # ------------------------------------------------------------------------------
 libLogging_define_arguments() {
-    libCmd_add -t value --long logLevel -v "g_log_level_str" -d "Info" -m once -u "Set the logging level (None, Error, Warn, Info, Debug, All)."
-    libCmd_add -t value --long logFile   -v "g_log_file"      -r n     -m once -u "Redirect all log output to the specified file."
+    libCmd_add -t value --long logLevel -v "LogLvlStr" -d "Info" -m once -u "Set the logging level (None, Error, Warn, Info, Debug, All)."
+    libCmd_add -t value --long logFile  -v "LogFile"    -r n     -m once -u "Redirect all log output to the specified file."
 }
 
 # ------------------------------------------------------------------------------
@@ -68,22 +68,24 @@ libLogging_define_arguments() {
 # DESCRIPTION: Applies logic based on parsed logging arguments.
 # ------------------------------------------------------------------------------
 libLogging_apply_args() {
-    log_set_level_from_string "$g_log_level_str"
+    SetLogLevel "$LogLvlStr"
 }
 
 # ------------------------------------------------------------------------------
 # FUNCTION: log_level_to_string
 # DESCRIPTION: Converts a log level number to its string representation.
 # ------------------------------------------------------------------------------
-log_level_to_string() {
+ToString_LogLvl() {
     case $1 in
-        $g_log_lvl_error)     echo "ERROR";;
-        $g_log_lvl_warn)      echo "WARN";;
-        $g_log_lvl_instr)     echo "INSTR";;
-        $g_log_lvl_info)      echo "INFO";;
-        $g_log_lvl_debug)     echo "DEBUG";;
-        $g_log_lvl_entryexit) echo "TRACE";;
-        *)                    echo "UNKNOWN";;
+        $LogLvl_None)      echo "NONE";;
+        $LogLvl_Error)     echo "ERROR";;
+        $LogLvl_Warn)      echo "WARN";;
+        $LogLvl_Instr)     echo "INSTR";;
+        $LogLvl_Info)      echo "INFO";;
+        $LogLvl_Debug)     echo "DEBUG";;
+        $LogLvl_Entryexit) echo "TRACE";;
+        $LogLvl_All)       echo "ALL";;
+        *)                 echo "UNKNOWN";;
     esac
 }
 
@@ -91,19 +93,19 @@ log_level_to_string() {
 # FUNCTION: log_level_from_string
 # DESCRIPTION: Converts a log level string to its numeric value.
 # ------------------------------------------------------------------------------
-log_level_from_string() {
+ToLogLvl_FromString() {
     local level_str
     level_str=$(echo "$1" | tr '[:lower:]' '[:upper:]')
     case "$level_str" in
-        "NONE")      echo $g_log_lvl_none;;
-        "ERROR")     echo $g_log_lvl_error;;
-        "WARN")      echo $((g_log_lvl_error | g_log_lvl_warn));;
-        "INSTR")     echo $((g_log_lvl_error | g_log_lvl_warn | g_log_lvl_instr));;
-        "INFO")      echo $((g_log_lvl_error | g_log_lvl_warn | g_log_lvl_instr | g_log_lvl_info));;
-        "DEBUG")     echo $((g_log_lvl_error | g_log_lvl_warn | g_log_lvl_instr | g_log_lvl_info | g_log_lvl_debug));;
-        "ENTRYEXIT") echo $g_log_lvl_all;;
-        "ALL")       echo $g_log_lvl_all;;
-        *)           echo $g_log_lvl_info;; # Default
+        "NONE")      echo $LogLvl_none;;
+        "ERROR")     echo $LogLvl_error;;
+        "WARN")      echo $((LogLvl_error | LogLvl_warn));;
+        "INSTR")     echo $((LogLvl_error | LogLvl_warn | LogLvl_instr));;
+        "INFO")      echo $((LogLvl_error | LogLvl_warn | LogLvl_instr | LogLvl_info));;
+        "DEBUG")     echo $((LogLvl_error | LogLvl_warn | LogLvl_instr | LogLvl_info | LogLvl_debug));;
+        "ENTRYEXIT") echo $LogLvl_all;;
+        "ALL")       echo $LogLvl_all;;
+        *)           echo $LogLvl_info;; # Default
     esac
 }
 
@@ -111,8 +113,8 @@ log_level_from_string() {
 # FUNCTION: log_set_level_from_string
 # DESCRIPTION: Sets the global log level from a string.
 # ------------------------------------------------------------------------------
-log_set_level_from_string() {
-    g_log_level=$(log_level_from_string "$1")
+SetLogLevel() {
+    LogLvl=$(ToLogLvl_FromString "$1")
 }
 
 # ------------------------------------------------------------------------------
@@ -181,7 +183,7 @@ log() {
     done
 
     # Check if the message should be logged
-    if [[ "$always" == true || ((g_log_level & level)) -ne 0 ]]; then
+    if [[ "$always" == true || (($LogLevel & $level)) -ne 0 ]]; then
         local msg="$*"
         local out_str=""
         local file_out_str=""
@@ -202,15 +204,15 @@ log() {
             out_str="$file_out_str"
 
             # Add color for console output if enabled
-            if [[ "$g_log_show_color" == true ]]; then
+            if [[ "$LogShowColor" == true ]]; then
                 local color
                 case $level in
-                    $g_log_lvl_error)     color="$c_error";;
-                    $g_log_lvl_warn)      color="$c_warn";;
-                    $g_log_lvl_instr)     color="$c_instr";;
-                    $g_log_lvl_info)      color="$c_info";;
-                    $g_log_lvl_debug)     color="$c_debug";;
-                    $g_log_lvl_entryexit) color="$c_entryexit";;
+                    $LogLvl_Error)     color="$c_error";;
+                    $LogLvl_Warn)      color="$c_warn";;
+                    $LogLvl_Instr)     color="$c_instr";;
+                    $LogLvl_Info)      color="$c_info";;
+                    $LogLvl_Debug)     color="$c_debug";;
+                    $LogLvl_Entryexit) color="$c_entryexit";;
                 esac
                 out_str="${color}${out_str}${c_reset}"
             fi
@@ -218,7 +220,7 @@ log() {
 
         # Print to stderr and file
         echo -e "$out_str" >&2
-        if [[ -n "$g_log_file" ]]; then
+        if [[ -n "$LogFile" ]]; then
             echo -e "$file_out_str" >> "$g_log_file"
         fi
     fi
@@ -237,9 +239,9 @@ log_banner() {
     banner=${banner// /$banner_char}
 
     # Banners should always be visible
-    log $g_log_lvl_info -Always -MsgOnly "$banner"
-    log $g_log_lvl_info -Always -MsgOnly "$msg"
-    log $g_log_lvl_info -Always -MsgOnly "$banner"
+    log $LogLvl_Info -Always -MsgOnly "$banner"
+    log $LogLvl_Info -Always -MsgOnly "$msg"
+    log $LogLvl_Info -Always -MsgOnly "$banner"
 }
 
 # ------------------------------------------------------------------------------
@@ -247,11 +249,11 @@ log_banner() {
 # DESCRIPTION: Convenience functions for tracing function entry and exit.
 # ------------------------------------------------------------------------------
 log_entry() {
-    log $g_log_lvl_entryexit "--> ENTER: ${FUNCNAME[1]}"
+    log $LogLvl_Entryexit "--> ENTER: ${FUNCNAME[1]}"
 }
 
 log_exit() {
-    log $g_log_lvl_entryexit "<-- EXIT:  ${FUNCNAME[1]}"
+    log $LogLvl_Entryexit "<-- EXIT:  ${FUNCNAME[1]}"
 }
 
 # --- Self-Registration ---

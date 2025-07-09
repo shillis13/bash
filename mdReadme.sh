@@ -59,7 +59,7 @@ select_parser() {
 # ==============================================================================
 main() {
     # 1. Handle all script initialization with one call.
-    if ! lib_initializeScript "$@"; then
+    if ! initializeScript "$@"; then
         return 1
     fi
 

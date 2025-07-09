@@ -1,51 +1,120 @@
 #!/usr/bin/env bash
+#
+# ==============================================================================
+# LIBRARY: lib_main.sh
+#
+# DESCRIPTION: The main library entry point. It sources all other libraries
+#              and provides the main script initialization function.
+# ==============================================================================
 
-# Part of the 'lib' suite.
-# Provides core, high-level orchestration functions for scripts.
+# --- Guard ---
+[[ -z "$LIB_MAIN_LOADED" ]] && readonly LIB_MAIN_LOADED=1 || return 0
 
-# Sourcing Guard
-filename="$(basename "${BASH_SOURCE[0]}")"
-isSourcedName="sourced_${filename/./_}"
-if declare -p "$isSourcedName" > /dev/null 2>&1; then return 1; else declare -g "$isSourcedName=true"; fi
-
-# --- Dependencies ---
-source "$(dirname "${BASH_SOURCE[0]}")/lib_thisFile.sh"
-lib_require "lib_logging.sh" "lib_cmdArgs.sh" "lib_command.sh"
+# ==============================================================================
+# HOOK REGISTRATION SYSTEM
+# ==============================================================================
 
 # --- Globals ---
-declare -g g_exec_flag=""
+readonly g_lib_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 
-# --- Functions ---
+# Arrays to hold the names of the functions to be called at different stages.
+g_arg_define_funcs=()
+g_arg_apply_funcs=()
+
+# ------------------------------------------------------------------------------
+# FUNCTION: function_exists
+#
+# DESCRIPTION:
+#   Checks if a function with the given name has been defined in the current
+#   shell environment.
+#
+# USAGE:
+#   if function_exists "my_function"; then ...
+#
+# PARAMETERS:
+#   $1 (string): The name of the function to check.
+#
+# RETURNS:
+#   0 (true) if the function exists, 1 (false) otherwise.
+# ------------------------------------------------------------------------------
+function_exists() {
+    # The `declare -F` command lists all defined function names.
+    # We redirect stderr to /dev/null to suppress "not found" errors
+    # and grep for an exact match of the function name.
+    declare -F "$1" > /dev/null
+    return $?
+}
+
+# ------------------------------------------------------------------------------
+# FUNCTION: register_hooks
+#
+# DESCRIPTION:
+#   Allows a library to register its functions to be called by the main
+#   initialization sequence. This is the key to resolving circular dependencies.
+#
+# USAGE:
+#   lib_register_hooks --define <func_name> --apply <func_name>
+# ------------------------------------------------------------------------------
+register_hooks() {
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --define) g_arg_define_funcs+=("$2"); shift 2;;
+            --apply)  g_arg_apply_funcs+=("$2");  shift 2;;
+            *) shift;;
+        esac
+    done
+}
+
+# --- Source All Libraries ---
+# The order is critical for dependencies.
+source "$g_lib_dir/lib_utils.sh"
+source "$g_lib_dir/lib_colors.sh"
+source "$g_lib_dir/lib_logging.sh"
+source "$g_lib_dir/lib_format.sh"
+source "$g_lib_dir/lib_types.sh"
+source "$g_lib_dir/lib_mathUtils.sh"
+source "$g_lib_dir/lib_sysInfoUtils.sh"
+source "$g_lib_dir/lib_stackTrace.sh"
+source "$g_lib_dir/lib_thisFile.sh"
+source "$g_lib_dir/lib_command.sh"
+source "$g_lib_dir/lib_grep.sh"
+source "$g_lib_dir/lib_cmdArgs.sh"
+
+# ==============================================================================
+# MAIN INITIALIZATION FUNCTION
+# ==============================================================================
 initializeScript() {
-    if ! declare -f "define_arguments" > /dev/null; then
-        log --error "Script startup error: 'define_arguments' function not found. Cannot initialize."
+    # --- 1. Define arguments by calling registered hook functions ---
+    for func in "${g_arg_define_funcs[@]}"; do
+        if function_exists "$func"; then
+            "$func"
+        else
+            echo "WARN: Registered define function '$func' does not exist." >&2
+        fi
+    done
+
+    # --- 2. Define arguments from the calling script ---
+    if ! function_exists "define_arguments"; then
+        log --Error "FATAL: Script must contain a 'define_arguments' function."
+        return 1
+    fi
+    define_arguments
+
+    # --- 3. Parse all defined arguments ---
+    if ! libCmd_parseArguments "$@"; then
+        log --Error "Failed to parse command-line arguments. Use --help for usage."
+        libStack_prettyPrint --skip 1
         return 1
     fi
 
-    # 1. Register all arguments
-    define_arguments
-
-    # 2. Parse all registered arguments, which populates $logLevel, $logFile, etc.
-    libCmd_parse "$@"
-
-    # 3. Handle --help flag
-    if [[ "${showHelp}" == "true" ]]; then
-        libCmd_usage
-        return 1 # Signal to the calling script that it should stop.
-    fi
-
-    # 4. FIX: Explicitly pass the parsed variables to the setter functions.
-    set_logLevel "$logLevel"
-    set_logFile "$logFile"
-
-    # 5. Set up execution context
-    if [[ "${execute_mode}" == "true" ]]; then
-        g_exec_flag="--exec"
-        log --info "EXECUTION MODE IS ENABLED."
-    else
-        g_exec_flag=""
-        log --info "Running in DRY RUN mode. Use --exec or -x to apply changes."
-    fi
+    # --- 4. Apply logic by calling registered hook functions ---
+    for func in "${g_arg_apply_funcs[@]}"; do
+        if function_exists "$func"; then
+            "$func"
+        else
+            log --Warn " Registered apply function '$func' does not exist." >&2
+        fi
+    done
 
     return 0
 }
