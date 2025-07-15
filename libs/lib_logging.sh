@@ -99,8 +99,9 @@ ToString_LogLvl() {
 ToLogLvl_FromString() {
     local level_str
     echo "ToLogLvl_FromString: param := $1"
-    level_str=$(echo "$1" | tr '[:lower:]' '[:upper:]')
-    # Need to trim off '--'
+    # Remove leading '-' or '--' (one or more dashes)
+    level_str=$(echo "$1" | sed 's/^--*//; s/^\s*//; s/\s*$//')
+    level_str=$(echo "$level_str" | tr '[:lower:]' '[:upper:]')
     if   [[ "$level_str" == "NONE"  ]]; then   echo "$LogLvl_None"
     elif [[ "$level_str" == "ERROR" ]]; then   echo "$LogLvl_Error"
     elif [[ "$level_str" == "WARN"  ]]; then   echo "$((LogLvl_Error | LogLvl_Warn))"
