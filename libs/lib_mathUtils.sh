@@ -6,8 +6,13 @@
 # DESCRIPTION: A library of mathematical and numeric utility functions.
 # ==============================================================================
 
-# --- Guard ---
-[[ -z "$LIB_MATH_UTILS_LOADED" ]] && readonly LIB_MATH_UTILS_LOADED=1 || return 0
+# --- Required Sourcing ---
+source "$(dirname "${BASH_SOURCE[0]}")/lib_core.sh"
+
+# Sourcing Guard
+# Create a sanitized, unique variable name from the filename.
+isSourcedName="$(sourced_name ${BASH_SOURCE[0]})" 
+if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g "$isSourcedName=true"; fi
 
 # ==============================================================================
 # FUNCTIONS

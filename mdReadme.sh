@@ -8,10 +8,21 @@
 # ==============================================================================
 set +x
 
-# --- Sourcing the Library ---
-# Sourcing the main library file, which handles its own dependencies.
-SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
-source "$SCRIPT_DIR/libs/lib_main.sh"
+# --- Globals ---
+readonly g_lib_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)/libs"
+
+# --- Required Sourcing ---
+source "$g_lib_dir/lib_core.sh"
+
+# Sourcing Guard
+# Create a sanitized, unique variable name from the filename.
+isSourcedName="$(sourced_name ${BASH_SOURCE[0]})" 
+if declare -p "$isSourcedName" > /dev/null 2>&1; then return 1; else declare -g "$isSourcedName=true"; fi
+
+# --- Dependencies ---
+load_dependencies() {
+    lib_require "lib_main.sh"
+}
 
 def_parser="glow"
 
@@ -26,7 +37,6 @@ def_parser="glow"
 # command-line arguments this specific script accepts.
 # ------------------------------------------------------------------------------
 define_arguments() {
-    echo "log --entryexit Defining script-specific arguments..."
     log --entryexit "Defining script-specific arguments..."
     libCmd_add -t switch -f g --long glow   -v "glow"       -d "false" -m once -u "Use glow parser to render the md text"
     libCmd_add -t switch -f m --long mdcat  -v "use_mdcat"  -d "false" -m once -u "Use mdcat parser to rendered to Markdown text"
@@ -59,12 +69,13 @@ select_parser() {
 # Main Orchestration Function
 # ==============================================================================
 main() {
-    SetLogLevel Debug
+    # 0. Load the dependencies
+    load_dependencies
+
     # 1. Handle all script initialization with one call.
     if ! initializeScript "$@"; then
         return 1
     fi
-    echo "mdReadme: main's initializeScript should have ran"
 
     # The rest of the arguments are now clean for the script's own use if needed.
     # shift "$g_consumed_args"
@@ -85,5 +96,5 @@ main() {
 # Main Execution Guard
 # ==============================================================================
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-    main "$@" "--exec"
+    main "$@" # "--exec"
 fi

@@ -1,0 +1,24 @@
+
+#!/usr/bin/env bash
+#
+# ==============================================================================
+# LIBRARY: lib_main.sh
+#
+# DESCRIPTION: The main library entry point. It sources all other libraries
+#              and provides the main script initialization function.
+# ==============================================================================
+
+# --- Globals ---
+readonly g_lib_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+
+# --- Required Sourcing ---
+source "$g_lib_dir/lib_core.sh"
+
+# Sourcing Guard
+# Create a sanitized, unique variable name from the filename.
+isSourcedName="$(sourced_name ${BASH_SOURCE[0]})" 
+if declare -p "$isSourcedName" > /dev/null 2>&1; then return 1; else declare -g "$isSourcedName=true"; fi
+
+# --- Dependencies ---
+# The order is critical for dependencies.
+lib_require "lib_main.sh"

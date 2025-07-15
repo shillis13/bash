@@ -3,14 +3,18 @@
 # Part of the 'lib' suite.
 # Provides functions for formatting and coloring output.
 
+# --- Required Sourcing ---
+source "$(dirname "${BASH_SOURCE[0]}")/lib_core.sh"
+
 # Sourcing Guard
-filename="$(basename "${BASH_SOURCE[0]}")"
-isSourcedName="sourced_${filename/./_}"
-if declare -p "$isSourcedName" > /dev/null 2>&1; then return 1; else declare -g "$isSourcedName=true"; fi
+# Create a sanitized, unique variable name from the filename.
+isSourcedName="$(sourced_name ${BASH_SOURCE[0]})" 
+if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g "$isSourcedName=true"; fi
 
 # --- Dependencies ---
-source "$(dirname "${BASH_SOURCE[0]}")/lib_thisFile.sh"
-lib_require "lib_colors.sh"
+load_dependencies() {
+    lib_require "lib_colors.sh"
+}
 
 #!/usr/bin/env bash
 #
@@ -169,4 +173,7 @@ FormatArray() {
         printf "  [%s] = %s\n" "$padded_index" "${arr_ref[$i]}"
     done
 }
+
+# Source the dependencies
+load_dependencies
 

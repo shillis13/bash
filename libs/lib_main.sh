@@ -7,15 +7,39 @@
 #              and provides the main script initialization function.
 # ==============================================================================
 
-# --- Guard ---
-[[ -z "$LIB_MAIN_LOADED" ]] && readonly LIB_MAIN_LOADED=1 || return 0
+# --- Globals ---
+# Global variable for the library path
+if [[ -z "$g_lib_dir" ]]; then 
+    declare -r -g  g_lib_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
+fi
+
+# --- Required Sourcing ---
+source "$g_lib_dir/lib_core.sh"
+
+# Sourcing Guard
+# Create a sanitized, unique variable name from the filename.
+isSourcedName="$(sourced_name ${BASH_SOURCE[0]})" 
+if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g "$isSourcedName=true"; fi
+
+# --- Dependencies ---
+load_dependencies() {
+    # The order is critical for dependencies.
+    lib_require "lib_logging.sh"
+    lib_require "lib_types.sh"
+    lib_require "lib_grep.sh"
+    lib_require "lib_utils.sh"
+    lib_require "lib_mathUtils.sh"
+    lib_require "lib_sysInfoUtils.sh"
+    lib_require "lib_colors.sh"
+    lib_require "lib_format.sh"
+    lib_require "lib_cmdArgs.sh"
+    lib_require "lib_command.sh"
+    lib_require "lib_stackTrace.sh"
+}
 
 # ==============================================================================
 # HOOK REGISTRATION SYSTEM
 # ==============================================================================
-
-# --- Globals ---
-readonly g_lib_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 
 # Arrays to hold the names of the functions to be called at different stages.
 g_arg_define_funcs=()
@@ -66,21 +90,6 @@ register_hooks() {
     done
 }
 
-# --- Source All Libraries ---
-# The order is critical for dependencies.
-source "$g_lib_dir/lib_utils.sh"
-source "$g_lib_dir/lib_colors.sh"
-source "$g_lib_dir/lib_logging.sh"
-source "$g_lib_dir/lib_format.sh"
-source "$g_lib_dir/lib_types.sh"
-source "$g_lib_dir/lib_mathUtils.sh"
-source "$g_lib_dir/lib_sysInfoUtils.sh"
-source "$g_lib_dir/lib_stackTrace.sh"
-source "$g_lib_dir/lib_thisFile.sh"
-source "$g_lib_dir/lib_command.sh"
-source "$g_lib_dir/lib_grep.sh"
-source "$g_lib_dir/lib_cmdArgs.sh"
-
 # ==============================================================================
 # MAIN INITIALIZATION FUNCTION
 # ==============================================================================
@@ -124,3 +133,4 @@ initializeScript() {
     return 0
 }
 
+load_dependencies

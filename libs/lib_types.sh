@@ -6,8 +6,14 @@
 # DESCRIPTION: A library for checking variable types and file system node types.
 # ==============================================================================
 
-# --- Guard ---
-[[ -z "$LIB_TYPES_LOADED" ]] && readonly LIB_TYPES_LOADED=1 || return 0
+# Sourcing Guard
+# Create a sanitized, unique variable name from the filename.
+# Not using lib_core.sh so as to not cause a dependency
+filename="$(basename "${BASH_SOURCE[0]}")"
+isSourcedName="sourced_${filename//[^a-zA-Z0-9_]/_}"
+if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g "$isSourcedName=true"; fi
+
+# --- Dependencies ---
 
 # ==============================================================================
 # FUNCTIONS

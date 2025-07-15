@@ -4,14 +4,18 @@
 # Provides a robust wrapper for executing shell commands.
 # Defaults to a safe "dry run" mode unless explicitly told to execute.
 
+# --- Required Sourcing ---
+source "$(dirname "${BASH_SOURCE[0]}")/lib_core.sh"
+
 # Sourcing Guard
-filename="$(basename "${BASH_SOURCE[0]}")"
-isSourcedName="sourced_${filename/./_}"
-if declare -p "$isSourcedName" > /dev/null 2>&1; then return 1; else declare -g "$isSourcedName=true"; fi
+# Create a sanitized, unique variable name from the filename.
+isSourcedName="$(sourced_name ${BASH_SOURCE[0]})" 
+if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g "$isSourcedName=true"; fi
 
 # --- Dependencies ---
-source "$(dirname "${BASH_SOURCE[0]}")/lib_thisFile.sh"
-lib_require "lib_logging.sh"
+load_dependencies() {
+    lib_require "lib_logging.sh"
+}
 
 # --- Globals ---
 declare -g g_run_quiet="false"
@@ -65,4 +69,5 @@ runCommand() {
     fi
 }
 
-
+# Source the dependencies
+load_dependencies

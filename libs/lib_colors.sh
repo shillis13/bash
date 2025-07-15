@@ -6,8 +6,18 @@
 # DESCRIPTION: Defines standard color variables for use in scripts.
 # ==============================================================================
 
-# --- Guard ---
-[[ -z "$LIB_COLORS_LOADED" ]] && readonly LIB_COLORS_LOADED=1 || return 0
+# --- Required Sourcing ---
+source "$(dirname "${BASH_SOURCE[0]}")/lib_core.sh"
+
+# Sourcing Guard
+# Create a sanitized, unique variable name from the filename.
+isSourcedName="$(sourced_name ${BASH_SOURCE[0]})" 
+if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g "$isSourcedName=true"; fi
+
+# --- Dependencies ---
+load_dependencies() { 
+    readonly nothing=""
+}
 
 # ==============================================================================
 # GLOBALS
@@ -102,6 +112,9 @@ disable_colors() {
     c_cyan=''
     c_white=''
 }
+
+# Load dependencies first
+load_dependencies
 
 # --- Self-Registration ---
 # Register the hook functions with the main library.

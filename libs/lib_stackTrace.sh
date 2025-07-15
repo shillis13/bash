@@ -11,16 +11,20 @@
 #   - lib_logging.sh
 # ==============================================================================
 
-# --- Guard ---
-# Prevents the library from being sourced more than once
-[[ -z "$LIB_STACK_TRACE_LOADED" ]] && readonly LIB_STACK_TRACE_LOADED=1 || return 0
+# --- Required Sourcing ---
+source "$(dirname "${BASH_SOURCE[0]}")/lib_core.sh"
+
+# Sourcing Guard
+# Create a sanitized, unique variable name from the filename.
+isSourcedName="$(sourced_name ${BASH_SOURCE[0]})" 
+if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g "$isSourcedName=true"; fi
 
 # --- Dependencies ---
-# Locate and source the necessary library files.
-LIB_STACK_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
-source "$LIB_STACK_DIR/lib_colors.sh"
-source "$LIB_STACK_DIR/lib_format.sh"
-source "$LIB_STACK_DIR/lib_logging.sh"
+load_dependencies() {
+    lib_require "lib_colors.sh"
+    lib_require "lib_format.sh"
+    lib_require "lib_logging.sh"
+}
 
 # ==============================================================================
 # GLOBALS
@@ -255,4 +259,5 @@ Stack_getLine() {
     fi
 }
 
-
+# Source dependencies
+load_dependencies

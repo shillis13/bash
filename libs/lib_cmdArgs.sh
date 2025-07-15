@@ -3,19 +3,53 @@
 # Part of the 'lib' suite.
 # Provides a powerful framework for defining and parsing command-line arguments.
 
+# --- Required Sourcing ---
+source "$(dirname "${BASH_SOURCE[0]}")/lib_core.sh"
+
 # Sourcing Guard
-filename="$(basename "${BASH_SOURCE[0]}")"
-isSourcedName="sourced_${filename/./_}"
-if declare -p "$isSourcedName" > /dev/null 2>&1; then return 1; else declare -g "$isSourcedName=true"; fi
+# Create a sanitized, unique variable name from the filename.
+isSourcedName="$(sourced_name ${BASH_SOURCE[0]})" 
+if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g "$isSourcedName=true"; fi
 
 # --- Dependencies ---
-source "$(dirname "${BASH_SOURCE[0]}")/lib_thisFile.sh"
-lib_require "lib_logging.sh"
+load_dependencies() {
+    lib_require "lib_logging.sh"
+}
 
 # --- Globals ---
 declare -g -r _CMD_ARGS_DELIMITER=$'\x1F'
 declare -g -A g_libCmd_argSpec
 g_libCmd_argSpec=()
+
+# ------------------------------------------------------------------------------
+# FUNCTION: functiong_define_arguments
+#
+# DESCRIPTION: Defines command-line arguments for the library
+# ------------------------------------------------------------------------------
+libCmdArgs_define_arguments() {
+    # echo "Logging: libCmdArgs_define_arguments"
+    libCmd_add -t switch -f '?' --long Help -v "ShowHelp" -d "Info" -m once -u "Show the usage help"
+}
+
+# ------------------------------------------------------------------------------
+# FUNCTION: libCmdArgs_apply_args
+#
+# DESCRIPTION: Applies logic based on parsed logging arguments.
+# ------------------------------------------------------------------------------
+libCmdArgs_apply_args() {
+    #echo "Logging: libCmdArgs_apply_args"
+    if [[ "$ShowHelp" == "true" ]] ; then 
+        libCmd_usage
+    fi
+}
+
+# ------------------------------------------------------------------------------
+# FUNCTION: libCmdArgs_GetValue
+#
+# DESCRIPTION: Take an arg spec and returns the value for a given key
+# ------------------------------------------------------------------------------
+#libCmdArgs_GetValue() { }
+
 
 # --- Functions ---
 libCmd_add() {
@@ -133,4 +167,11 @@ libCmd_usage() {
     done
 }
 
+# --- Self-Registration ---
+# Register hooks with the main library to be called at the correct time.
+if function_exists "lib_register_hooks"; then
+    lib_register_hooks --define libCmdArgs_define_arguments --apply libCmdArgs_apply_args
+fi
+
+load_dependencies
 

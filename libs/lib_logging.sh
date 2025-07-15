@@ -9,16 +9,18 @@
 #   - lib_colors.sh
 # ==============================================================================
 
-# --- Guard ---
-[[ -z "$LIB_LOGGING_LOADED" ]] && readonly LIB_LOGGING_LOADED=1 || return 0
+# --- Required Sourcing ---
+source "$(dirname "${BASH_SOURCE[0]}")/lib_core.sh"
+
+# Sourcing Guard
+# Create a sanitized, unique variable name from the filename.
+isSourcedName="$(sourced_name ${BASH_SOURCE[0]})" 
+if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g "$isSourcedName=true"; fi
 
 # --- Dependencies ---
-# This check ensures we can source dependencies even if this script is sourced
-# from a different directory.
-LIB_LOGGING_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
-if [[ -f "$LIB_LOGGING_DIR/lib_colors.sh" ]]; then
-    source "$LIB_LOGGING_DIR/lib_colors.sh"
-fi
+load_dependencies() {
+    lib_require "lib_colors.sh"
+}
 
 # ==============================================================================
 # GLOBALS
@@ -58,9 +60,9 @@ c_entryexit="${c_blue}"
 # DESCRIPTION: Defines command-line arguments for logging functionality.
 # ------------------------------------------------------------------------------
 libLogging_define_arguments() {
-    echo "Logging: libLogging_define_arguments"
-    libCmd_add -t value --long logLevel -v "LogLvlStr" -d "Info" -m once -u "Set the logging level (None, Error, Warn, Info, Debug, All)."
-    libCmd_add -t value --long logFile  -v "LogFile"    -r n     -m once -u "Redirect all log output to the specified file."
+    # echo "Logging: libLogging_define_arguments"
+    libCmd_add -t value --long logLevel -v "LogLevelStr" -d "Info" -m once -u "Set the logging level (None, Error, Warn, Info, Debug, All)."
+    libCmd_add -t value --long logFile  -v "LogFile"     -r n      -m once -u "Redirect all log output to the specified file."
 }
 
 # ------------------------------------------------------------------------------
@@ -96,7 +98,9 @@ ToString_LogLvl() {
 # ------------------------------------------------------------------------------
 ToLogLvl_FromString() {
     local level_str
+    echo "ToLogLvl_FromString: param := $1"
     level_str=$(echo "$1" | tr '[:lower:]' '[:upper:]')
+    # Need to trim off '--'
     if   [[ "$level_str" == "NONE"  ]]; then   echo "$LogLvl_None"
     elif [[ "$level_str" == "ERROR" ]]; then   echo "$LogLvl_Error"
     elif [[ "$level_str" == "WARN"  ]]; then   echo "$((LogLvl_Error | LogLvl_Warn))"
@@ -104,8 +108,9 @@ ToLogLvl_FromString() {
     elif [[ "$level_str" == "INFO"  ]]; then   echo "$((LogLvl_Error | LogLvl_Warn | LogLvl_Instr | LogLvl_Info))"
     elif [[ "$level_str" == "DEBUG" ]]; then   echo "$((LogLvl_Error | LogLvl_Warn | LogLvl_Instr | LogLvl_Info | LogLvl_Debug))"
     elif [[ "$level_str" == "ALL"   ]]; then   echo "$LogLvl_All"
-    elif [[ "$level_str" == "ENTRYEXIT" ]]; then echo "$LogLvl_Entryexit"
+    elif [[ "$level_str" == "ENTRYEXIT" ]]; then echo "$LogLvl_EntryExit"
     else  
+        echo "ToLogLvl_FromString: Unknown level: setting to INFO"
         echo "$LogLvl_Info"
     fi
 }
@@ -173,6 +178,7 @@ log() {
     # echo "Log: " "$@"
     local level=""
     level=$(ToLogLvl_FromString "$1")
+    echo "Log: Level = $level"
     shift
     local msg_only=false
     local always=false
@@ -270,4 +276,5 @@ if function_exists "lib_register_hooks"; then
     lib_register_hooks --define libLogging_define_arguments --apply libLogging_apply_args
 fi
 
-
+# Source the dependencies
+load_dependencies
