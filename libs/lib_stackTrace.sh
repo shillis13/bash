@@ -27,7 +27,7 @@ source "$LIB_STACK_DIR/lib_logging.sh"
 # ==============================================================================
 
 # Default maximum widths for the columns in the pretty-printed stack trace.
-# These can be overridden by calling libStack_setMaxWidths.
+# These can be overridden by calling Stack_setMaxWidths.
 g_stack_max_width_file=40
 g_stack_max_width_func=35
 g_stack_max_width_line=5
@@ -37,48 +37,48 @@ g_stack_max_width_line=5
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# FUNCTION: libStack_setMaxWidths
+# FUNCTION: Stack_setMaxWidths
 #
 # DESCRIPTION:
 #   Sets the maximum column widths for the pretty-printed stack trace output.
 #
 # USAGE:
-#   libStack_setMaxWidths [--file W] [--func W] [--line W]
+#   Stack_setMaxWidths [--file W] [--func W] [--line W]
 #
 # PARAMETERS:
 #   --file (integer): Max width for the file path column.
 #   --func (integer): Max width for the function name column.
 #   --line (integer): Max width for the line number column.
 # ------------------------------------------------------------------------------
-libStack_setMaxWidths() {
+Stack_setMaxWidths() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --file) g_stack_max_width_file=$2; shift 2 ;;
             --func) g_stack_max_width_func=$2; shift 2 ;;
             --line) g_stack_max_width_line=$2; shift 2 ;;
-            *) log --warn "Unknown argument to libStack_setMaxWidths: $1"; shift ;;
+            *) log --warn "Unknown argument to Stack_setMaxWidths: $1"; shift ;;
         esac
     done
 }
 
 # ------------------------------------------------------------------------------
-# FUNCTION: libStack_get
+# FUNCTION: Stack_get
 #
 # DESCRIPTION:
 #   Retrieves the current call stack and stores it in a provided array variable.
 #   Each array element is a string in the format "file:line:function".
 #
 # USAGE:
-#   libStack_get <array_name> [--skip N] [--max M]
+#   Stack_get <array_name> [--skip N] [--max M]
 #
 # PARAMETERS:
 #   array_name (string): The name of the array to populate with stack data.
 #   --skip N (integer, optional): Skips the first N frames of the stack.
 #   --max M (integer, optional): Returns at most M frames.
 # ------------------------------------------------------------------------------
-libStack_get() {
+Stack_get() {
     if [[ -z "$1" ]]; then
-        log --error "libStack_get requires an array name to store the result."
+        log --error "Stack_get requires an array name to store the result."
         return 1
     fi
     local -n stack_ref=$1
@@ -95,7 +95,7 @@ libStack_get() {
         esac
     done
 
-    # Start at index 1 to skip this function (libStack_get) itself.
+    # Start at index 1 to skip this function (Stack_get) itself.
     # The user's --skip value is added to this baseline.
     local current_frame_index=1
     local frames_collected=0
@@ -139,13 +139,13 @@ libStack_get() {
 }
 
 # ------------------------------------------------------------------------------
-# FUNCTION: libStack_prettyPrint
+# FUNCTION: Stack_prettyPrint
 #
 # DESCRIPTION:
 #   Prints a formatted, colored, and aligned stack trace to the console.
 #
 # USAGE:
-#   libStack_prettyPrint [--skip N] [--max M] [--no-color]
+#   Stack_prettyPrint [--skip N] [--max M] [--no-color]
 #
 # PARAMETERS:
 #   --skip N (integer, optional): Skips the first N frames. Skips 1 by default
@@ -153,7 +153,7 @@ libStack_get() {
 #   --max M (integer, optional): Returns at most M frames.
 #   --no-color (switch, optional): Disables colored output.
 # ------------------------------------------------------------------------------
-libStack_prettyPrint() {
+Stack_prettyPrint() {
     local use_color=true
     # Skip this prettyPrint function itself by default.
     local skip=1
@@ -169,7 +169,7 @@ libStack_prettyPrint() {
     done
 
     local stack_data
-    libStack_get stack_data --skip "$skip" --max "$max"
+    Stack_get stack_data --skip "$skip" --max "$max"
 
     if [[ ${#stack_data[@]} -eq 0 ]]; then
         return
@@ -192,9 +192,9 @@ libStack_prettyPrint() {
 
     # --- Print Header ---
     local header_file header_func header_line
-    header_file=$(libFormat_padText "File" "$max_file" "center")
-    header_func=$(libFormat_padText "Function" "$max_func" "center")
-    header_line=$(libFormat_padText "Line" "$max_line" "center")
+    header_file=$(PadText "File" "$max_file" "center")
+    header_func=$(PadText "Function" "$max_func" "center")
+    header_line=$(PadText "Line" "$max_line" "center")
 
     if $use_color; then
         printf "%s%s  %s  %s%s\n" "${c_bold}${c_cyan}" "$header_file" "$header_func" "$header_line" "${c_reset}"
@@ -220,13 +220,13 @@ libStack_prettyPrint() {
 }
 
 # ------------------------------------------------------------------------------
-# FUNCTION: libStack_getLine
+# FUNCTION: Stack_getLine
 #
 # DESCRIPTION:
 #   Returns a single line from the stack trace by its index.
 #
 # USAGE:
-#   libStack_getLine <index> [--skip N]
+#   Stack_getLine <index> [--skip N]
 #
 # PARAMETERS:
 #   index (integer): The 0-based index of the stack frame to retrieve.
@@ -235,17 +235,17 @@ libStack_prettyPrint() {
 # OUTPUT:
 #   Prints the requested stack frame line to stdout.
 # ------------------------------------------------------------------------------
-libStack_getLine() {
+Stack_getLine() {
     if ! [[ "$1" =~ ^[0-9]+$ ]]; then
-        log --error "libStack_getLine requires a numeric index as the first argument."
+        log --error "Stack_getLine requires a numeric index as the first argument."
         return 1
     fi
     local index=$1
     shift
 
     local stack_data
-    # Pass the remaining arguments (--skip) to libStack_get
-    libStack_get stack_data "$@"
+    # Pass the remaining arguments (--skip) to Stack_get
+    Stack_get stack_data "$@"
 
     if [[ $index -ge 0 && $index -lt ${#stack_data[@]} ]]; then
         echo "${stack_data[$index]}"

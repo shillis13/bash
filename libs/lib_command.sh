@@ -40,7 +40,7 @@ runCommand() {
         esac
     done
 
-    command_str="$@"
+    command_str="$*"
     if [[ -z "$command_str" ]]; then
         log --warn "runCommand called with no command."
         return 1

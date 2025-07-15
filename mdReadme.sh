@@ -26,6 +26,7 @@ def_parser="glow"
 # command-line arguments this specific script accepts.
 # ------------------------------------------------------------------------------
 define_arguments() {
+    echo "log --entryexit Defining script-specific arguments..."
     log --entryexit "Defining script-specific arguments..."
     libCmd_add -t switch -f g --long glow   -v "glow"       -d "false" -m once -u "Use glow parser to render the md text"
     libCmd_add -t switch -f m --long mdcat  -v "use_mdcat"  -d "false" -m once -u "Use mdcat parser to rendered to Markdown text"
@@ -41,33 +42,36 @@ define_arguments() {
 # ------------------------------------------------------------------------------
 select_parser() {
     local parser=""
-    if [ $use_glow ] ;  then
+    if [ "$use_glow" ] ;  then
         parser="glow"
-    elif [ $use_mdcat ] ; then
+    elif [ "$use_mdcat" ] ; then
         parser="mdcat"
-    elif [ $use_rich ] ; then
+    elif [ "$use_rich" ] ; then
         parser="rich"
     else
-        parser=$def_parser
+        parser="$def_parser"
     fi
 
-    echo $parser
+    echo "$parser"
 }
 
 # ==============================================================================
 # Main Orchestration Function
 # ==============================================================================
 main() {
+    SetLogLevel Debug
     # 1. Handle all script initialization with one call.
     if ! initializeScript "$@"; then
         return 1
     fi
+    echo "mdReadme: main's initializeScript should have ran"
 
     # The rest of the arguments are now clean for the script's own use if needed.
     # shift "$g_consumed_args"
 
     # 2. Determine parser to use
-    local parser=$(select_parser)
+    local parser=""
+    parser="$(select_parser)"
         
     # 3. Orchestrate the core logic, using the globally-set $g_execution_flag.
     log --debug "$hande_parser $p_args"

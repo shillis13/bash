@@ -23,11 +23,13 @@ lib_require() {
 
         # Check if the guard variable is already set. If so, it's already sourced.
         if declare -p "$dep_guard_name" > /dev/null 2>&1; then
+            echo "$dep_path has already been sourced. Skipping subsequent sourcing."
             continue # Skip to the next dependency.
         fi
 
         # Check if file exists and source it.
         if [ -f "$dep_path" ]; then
+            echo "Sourcing $dep_path"
             source "$dep_path"
         else
             printf "FATAL: Dependency not found.\n  Required by: '%s'\n  Missing:   '%s'\n" "$parent_script" "$dep_path" >&2
@@ -37,7 +39,7 @@ lib_require() {
 }
 
 # --- Introspection Functions ---
-thisFile()   { echo "$(basename "${BASH_SOURCE[1]}")"; }
-thisCaller() { echo "$(basename "${BASH_SOURCE[2]}")"; }
-thisScript() { echo "$(basename "$0")"; }
+thisFile()   { "$(basename "${BASH_SOURCE[1]}")"; }
+thisCaller() { "$(basename "${BASH_SOURCE[2]}")"; }
+thisScript() { "$(basename "$0")"; }
 

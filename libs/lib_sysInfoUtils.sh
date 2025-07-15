@@ -23,7 +23,7 @@ is_link() { [[ -L "$1" ]]; }
 is_exe() { [[ -x "$1" ]]; }
 is_readable() { [[ -r "$1" ]]; }
 is_writable() { [[ -w "$1" ]]; }
-is_writable_dir() { [[ is_dir "$1" && is_writable "$1" ]] ; }
+is_writable_dir() { is_dir "$1" && is_writable "$1" ; }
 
 # ------------------------------------------------------------------------------
 # SECTION: Get System Info

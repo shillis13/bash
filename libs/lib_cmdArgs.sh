@@ -19,6 +19,7 @@ g_libCmd_argSpec=()
 
 # --- Functions ---
 libCmd_add() {
+    log_entry
     local argType="" short_flag="" varName="" defaultValue="" required="n" multiplicity="multi" usage="" long_opt=""
     while (( "$#" )); do
         case "$1" in
@@ -35,19 +36,24 @@ libCmd_add() {
     done
 
     if [[ -z "$short_flag" ]] && [[ -z "$long_opt" ]]; then
-        log --error "Argument spec must have a short (-f) or long (--long) flag."
+        log --Error "Argument spec must have a short (-f) or long (--long) flag."
+        log_exit
         return 1
     fi
     if [[ -z "$varName" ]]; then
-        log --error "Argument spec for flag '--${long_opt:-$short_flag}' must include a variable name with -v."
+        log --Error "Argument spec for flag '--${long_opt:-$short_flag}' must include a variable name with -v."
+        log_exit
         return 1
     fi
 
     local key="${long_opt:-$short_flag}"
+    log --Debug "g_libCmd_argSpec['$key']=$argType$_CMD_ARGS_DELIMITER$varName$_CMD_ARGS_DELIMITER$defaultValue$_CMD_ARGS_DELIMITER$required$_CMD_ARGS_DELIMITER$multiplicity$_CMD_ARGS_DELIMITER$usage$_CMD_ARGS_DELIMITER$short_flag$_CMD_ARGS_DELIMITER$long_opt"
     g_libCmd_argSpec["$key"]="$argType$_CMD_ARGS_DELIMITER$varName$_CMD_ARGS_DELIMITER$defaultValue$_CMD_ARGS_DELIMITER$required$_CMD_ARGS_DELIMITER$multiplicity$_CMD_ARGS_DELIMITER$usage$_CMD_ARGS_DELIMITER$short_flag$_CMD_ARGS_DELIMITER$long_opt"
+    log_exit
 }
 
 libCmd_parse() {
+    log_entry
     while (( "$#" )); do
         local key="$1"
         local arg_key=""
@@ -73,7 +79,7 @@ libCmd_parse() {
         esac
 
         if [[ -z "$arg_key" ]] || [[ -z "${g_libCmd_argSpec[$arg_key]}" ]]; then
-            log --warn "Unknown option: $key"
+            log --Warn "Unknown option: $key"
             shift
             continue
         fi
@@ -101,7 +107,7 @@ libCmd_parse() {
         IFS="$_CMD_ARGS_DELIMITER" read -r _ varName defaultValue required multiplicity _ _ _ <<< "${g_libCmd_argSpec[$key]}"
         if ! declare -p "$varName" > /dev/null 2>&1; then
             if [[ "$required" == "y" ]]; then
-                log --error "Required argument '--$key' is missing."
+                log --Error "Required argument '--$key' is missing."
                 return 1
             fi
             if [[ "$multiplicity" != "multi" ]]; then
@@ -109,6 +115,7 @@ libCmd_parse() {
             fi
         fi
     done
+    log_exit
     return 0
 }
 
@@ -122,7 +129,7 @@ libCmd_usage() {
 
         local formatted_line
         formatted_line=$(printf "  %-25s %s" "$flags" "$usage")
-        log -MsgOnly "$formatted_line"
+        log --MsgOnly "$formatted_line"
     done
 }
 

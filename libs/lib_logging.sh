@@ -36,7 +36,7 @@ readonly LogLvl_All=63 # Sum of all levels above
 
 # --- Configuration Globals ---
 LogLevel=${LogLvl_Info} # Default numeric level
-LogLevelStr="Info"         # Default string for the command-line arg
+LogLevelStr="Debug"         # Default string for the command-line arg
 LogFile=""
 LogShowColor=true
 
@@ -58,6 +58,7 @@ c_entryexit="${c_blue}"
 # DESCRIPTION: Defines command-line arguments for logging functionality.
 # ------------------------------------------------------------------------------
 libLogging_define_arguments() {
+    echo "Logging: libLogging_define_arguments"
     libCmd_add -t value --long logLevel -v "LogLvlStr" -d "Info" -m once -u "Set the logging level (None, Error, Warn, Info, Debug, All)."
     libCmd_add -t value --long logFile  -v "LogFile"    -r n     -m once -u "Redirect all log output to the specified file."
 }
@@ -68,45 +69,45 @@ libLogging_define_arguments() {
 # DESCRIPTION: Applies logic based on parsed logging arguments.
 # ------------------------------------------------------------------------------
 libLogging_apply_args() {
-    SetLogLevel "$LogLvlStr"
+    echo "Logging: libLogging_apply_args"
+    SetLogLevel "$LogLevelStr"
 }
 
 # ------------------------------------------------------------------------------
-# FUNCTION: log_level_to_string
+# FUNCTION: ToString_LogLvl
 # DESCRIPTION: Converts a log level number to its string representation.
 # ------------------------------------------------------------------------------
 ToString_LogLvl() {
-    case $1 in
-        $LogLvl_None)      echo "NONE";;
-        $LogLvl_Error)     echo "ERROR";;
-        $LogLvl_Warn)      echo "WARN";;
-        $LogLvl_Instr)     echo "INSTR";;
-        $LogLvl_Info)      echo "INFO";;
-        $LogLvl_Debug)     echo "DEBUG";;
-        $LogLvl_Entryexit) echo "TRACE";;
-        $LogLvl_All)       echo "ALL";;
-        *)                 echo "UNKNOWN";;
-    esac
+    if   [[ "$1" == "$LogLvl_None"  ]]; then  echo "NONE"
+    elif [[ "$1" == "$LogLvl_Error" ]]; then  echo "ERROR"
+    elif [[ "$1" == "$LogLvl_Warn"  ]]; then  echo "WARN"
+    elif [[ "$1" == "$LogLvl_Instr" ]]; then  echo "INSTR"
+    elif [[ "$1" == "$LogLvl_Info"  ]]; then  echo "INFO"
+    elif [[ "$1" == "$LogLvl_Debug" ]]; then  echo "DEBUG"
+    elif [[ "$1" == "$LogLvl_All"   ]]; then  echo "ALL"
+    elif [[ "$1" == "$LogLvl_Entryexit" ]]; then echo "TRACE"
+    else echo "UNKNOWN"
+    fi
 }
 
 # ------------------------------------------------------------------------------
-# FUNCTION: log_level_from_string
+# FUNCTION: ToLogLvl_FromString
 # DESCRIPTION: Converts a log level string to its numeric value.
 # ------------------------------------------------------------------------------
 ToLogLvl_FromString() {
     local level_str
     level_str=$(echo "$1" | tr '[:lower:]' '[:upper:]')
-    case "$level_str" in
-        "NONE")      echo $LogLvl_none;;
-        "ERROR")     echo $LogLvl_error;;
-        "WARN")      echo $((LogLvl_error | LogLvl_warn));;
-        "INSTR")     echo $((LogLvl_error | LogLvl_warn | LogLvl_instr));;
-        "INFO")      echo $((LogLvl_error | LogLvl_warn | LogLvl_instr | LogLvl_info));;
-        "DEBUG")     echo $((LogLvl_error | LogLvl_warn | LogLvl_instr | LogLvl_info | LogLvl_debug));;
-        "ENTRYEXIT") echo $LogLvl_all;;
-        "ALL")       echo $LogLvl_all;;
-        *)           echo $LogLvl_info;; # Default
-    esac
+    if   [[ "$level_str" == "NONE"  ]]; then   echo "$LogLvl_None"
+    elif [[ "$level_str" == "ERROR" ]]; then   echo "$LogLvl_Error"
+    elif [[ "$level_str" == "WARN"  ]]; then   echo "$((LogLvl_Error | LogLvl_Warn))"
+    elif [[ "$level_str" == "INSTR" ]]; then   echo "$((LogLvl_Error | LogLvl_Warn | LogLvl_Instr))"
+    elif [[ "$level_str" == "INFO"  ]]; then   echo "$((LogLvl_Error | LogLvl_Warn | LogLvl_Instr | LogLvl_Info))"
+    elif [[ "$level_str" == "DEBUG" ]]; then   echo "$((LogLvl_Error | LogLvl_Warn | LogLvl_Instr | LogLvl_Info | LogLvl_Debug))"
+    elif [[ "$level_str" == "ALL"   ]]; then   echo "$LogLvl_All"
+    elif [[ "$level_str" == "ENTRYEXIT" ]]; then echo "$LogLvl_Entryexit"
+    else  
+        echo "$LogLvl_Info"
+    fi
 }
 
 # ------------------------------------------------------------------------------
@@ -114,7 +115,8 @@ ToLogLvl_FromString() {
 # DESCRIPTION: Sets the global log level from a string.
 # ------------------------------------------------------------------------------
 SetLogLevel() {
-    LogLvl=$(ToLogLvl_FromString "$1")
+    echo "SetLogLevel: $1"
+    LogLevel=$(ToLogLvl_FromString "$1")
 }
 
 # ------------------------------------------------------------------------------
@@ -138,7 +140,7 @@ _log_get_metadata() {
 
     # 2. Log Level Tag
     local level_tag
-    level_tag=$(log_level_to_string "$level")
+    level_tag=$(ToString_LogLvl "$level")
     meta_str+="[${level_tag}] "
 
     # 3. Caller Info (File, Line, Function)
@@ -168,7 +170,9 @@ _log_get_metadata() {
 #   log <LEVEL> [-MsgOnly] [-Always] "My message"
 # ------------------------------------------------------------------------------
 log() {
-    local level=$1
+    # echo "Log: " "$@"
+    local level=""
+    level=$(ToLogLvl_FromString "$1")
     shift
     local msg_only=false
     local always=false
@@ -183,7 +187,9 @@ log() {
     done
 
     # Check if the message should be logged
-    if [[ "$always" == true || (($LogLevel & $level)) -ne 0 ]]; then
+    # echo "Log: LogLevel = ${LogLevel}     :  level = ${level}"
+    if [[ "$always" == true ]] || (( (LogLevel & level) != 0 )); then
+        # echo "Log: message should print out"
         local msg="$*"
         local out_str=""
         local file_out_str=""
@@ -206,23 +212,25 @@ log() {
             # Add color for console output if enabled
             if [[ "$LogShowColor" == true ]]; then
                 local color
-                case $level in
-                    $LogLvl_Error)     color="$c_error";;
-                    $LogLvl_Warn)      color="$c_warn";;
-                    $LogLvl_Instr)     color="$c_instr";;
-                    $LogLvl_Info)      color="$c_info";;
-                    $LogLvl_Debug)     color="$c_debug";;
-                    $LogLvl_Entryexit) color="$c_entryexit";;
-                esac
+                if   [[ "$level" == "$LogLvl_Error" ]]; then     color="$c_error"
+                elif [[ "$level" == "$LogLvl_Warn"  ]]; then     color="$c_warn"
+                elif [[ "$level" == "$LogLvl_Instr" ]]; then     color="$c_instr"
+                elif [[ "$level" == "$LogLvl_Info"  ]]; then     color="$c_info"
+                elif [[ "$level" == "$LogLvl_Debug" ]]; then     color="$c_debug"
+                elif [[ "$level" == "$LogLvl_Entryexit" ]]; then color="$c_entryexit"
+                fi
                 out_str="${color}${out_str}${c_reset}"
             fi
         fi
 
+
         # Print to stderr and file
         echo -e "$out_str" >&2
         if [[ -n "$LogFile" ]]; then
-            echo -e "$file_out_str" >> "$g_log_file"
+            echo -e "$file_out_str" >> "$LogFile"
         fi
+    #else
+        # echo "Log: msg log level not enough to print"
     fi
 }
 
@@ -239,9 +247,9 @@ log_banner() {
     banner=${banner// /$banner_char}
 
     # Banners should always be visible
-    log $LogLvl_Info -Always -MsgOnly "$banner"
-    log $LogLvl_Info -Always -MsgOnly "$msg"
-    log $LogLvl_Info -Always -MsgOnly "$banner"
+    log "$LogLvl_Info" -Always -MsgOnly "$banner"
+    log "$LogLvl_Info" -Always -MsgOnly "$msg"
+    log "$LogLvl_Info" -Always -MsgOnly "$banner"
 }
 
 # ------------------------------------------------------------------------------
@@ -249,11 +257,11 @@ log_banner() {
 # DESCRIPTION: Convenience functions for tracing function entry and exit.
 # ------------------------------------------------------------------------------
 log_entry() {
-    log $LogLvl_Entryexit "--> ENTER: ${FUNCNAME[1]}"
+    log "EntryExit" "--> ENTER: ${FUNCNAME[1]}"
 }
 
 log_exit() {
-    log $LogLvl_Entryexit "<-- EXIT:  ${FUNCNAME[1]}"
+    log "EntryExit" "<-- EXIT:  ${FUNCNAME[1]}"
 }
 
 # --- Self-Registration ---

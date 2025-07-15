@@ -56,6 +56,7 @@ function_exists() {
 #   lib_register_hooks --define <func_name> --apply <func_name>
 # ------------------------------------------------------------------------------
 register_hooks() {
+    echo "Main: register_hooks: $*"
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --define) g_arg_define_funcs+=("$2"); shift 2;;
@@ -84,9 +85,12 @@ source "$g_lib_dir/lib_cmdArgs.sh"
 # MAIN INITIALIZATION FUNCTION
 # ==============================================================================
 initializeScript() {
+    echo "Main: initializeScript"
     # --- 1. Define arguments by calling registered hook functions ---
     for func in "${g_arg_define_funcs[@]}"; do
         if function_exists "$func"; then
+            echo "log --Debug Calling registered fcn: $func"
+            log --Debug "Calling registered fcn: $func"
             "$func"
         else
             echo "WARN: Registered define function '$func' does not exist." >&2
@@ -101,15 +105,16 @@ initializeScript() {
     define_arguments
 
     # --- 3. Parse all defined arguments ---
-    if ! libCmd_parseArguments "$@"; then
+    if ! libCmd_parse "$@"; then
         log --Error "Failed to parse command-line arguments. Use --help for usage."
-        libStack_prettyPrint --skip 1
+        Stack_prettyPrint --skip 1
         return 1
     fi
 
     # --- 4. Apply logic by calling registered hook functions ---
     for func in "${g_arg_apply_funcs[@]}"; do
         if function_exists "$func"; then
+            log --Debug "$func"
             "$func"
         else
             log --Warn " Registered apply function '$func' does not exist." >&2
