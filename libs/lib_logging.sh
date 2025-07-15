@@ -98,7 +98,6 @@ ToString_LogLvl() {
 # ------------------------------------------------------------------------------
 ToLogLvl_FromString() {
     local level_str
-    echo "ToLogLvl_FromString: param := $1"
     # Remove leading '-' or '--' (one or more dashes)
     level_str=$(echo "$1" | sed 's/^--*//; s/^\s*//; s/\s*$//')
     level_str=$(echo "$level_str" | tr '[:lower:]' '[:upper:]')
@@ -111,7 +110,6 @@ ToLogLvl_FromString() {
     elif [[ "$level_str" == "ALL"   ]]; then   echo "$LogLvl_All"
     elif [[ "$level_str" == "ENTRYEXIT" ]]; then echo "$LogLvl_EntryExit"
     else  
-        echo "ToLogLvl_FromString: Unknown level: setting to INFO"
         echo "$LogLvl_Info"
     fi
 }
@@ -121,7 +119,7 @@ ToLogLvl_FromString() {
 # DESCRIPTION: Sets the global log level from a string.
 # ------------------------------------------------------------------------------
 SetLogLevel() {
-    echo "SetLogLevel: $1"
+    # echo "SetLogLevel: $1"
     LogLevel=$(ToLogLvl_FromString "$1")
 }
 
@@ -179,7 +177,6 @@ log() {
     # echo "Log: " "$@"
     local level=""
     level=$(ToLogLvl_FromString "$1")
-    echo "Log: Level = $level"
     shift
     local msg_only=false
     local always=false
