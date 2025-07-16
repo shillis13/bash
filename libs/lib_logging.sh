@@ -19,7 +19,16 @@ if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g 
 
 # --- Dependencies ---
 load_dependencies() {
+    lib_require "lib_thisFile.sh"
     lib_require "lib_colors.sh"
+    
+    # --- Self-Registration ---
+    # Register hooks with the main library to be called at the correct time.
+    if function_exists "register_hooks"; then
+        register_hooks --define libLogging_define_arguments --apply libLogging_apply_args
+    fi
+
+    _setColors
 }
 
 # ==============================================================================
@@ -37,18 +46,28 @@ readonly LogLvl_EntryExit=32
 readonly LogLvl_All=64 # Sum of all levels above
 
 # --- Configuration Globals ---
-LogLevel=${LogLvl_EntryExit} # Default numeric level
-LogLevelStr="EntryExit"         # Default string for the command-line arg
+LogLevel=${LogLvl_Info} # Default numeric level
+LogLevelStr="Info"         # Default string for the command-line arg
 LogFile=""
 LogShowColor=true
 
+# Colors are initially nothing because lib_colors has not been initialized  yet
+c_error=""
+c_instr=""
+c_warn=""
+c_info=""
+c_debug=""
+c_entryexit=""
+
 # --- Log Colors ---
-c_error="${c_bold}${c_red}"
-c_instr="${c_bold}${c_magenta}"
-c_warn="${c_bold}${c_yellow}"
-c_info="${c_bold}${c_green}"
-c_debug="${c_cyan}"
-c_entryexit="${c_blue}"
+function _setColors() {
+    c_error="${c_bold}${c_red}"
+    c_instr="${c_bold}${c_magenta}"
+    c_warn="${c_bold}${c_yellow}"
+    c_info="${c_bold}${c_green}"
+    c_debug="${c_cyan}"
+    c_entryexit="${c_blue}"
+}
 
 # ==============================================================================
 # FUNCTIONS
@@ -270,12 +289,6 @@ log_exit() {
     local caller_idx=1
     log $caller_idx "EntryExit" "<-- EXIT:  ${FUNCNAME[1]}"
 }
-
-# --- Self-Registration ---
-# Register hooks with the main library to be called at the correct time.
-if function_exists "register_hooks"; then
-    register_hooks --define libLogging_define_arguments --apply libLogging_apply_args
-fi
 
 # Source the dependencies
 load_dependencies

@@ -29,6 +29,14 @@ if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g 
 load_dependencies() {
     lib_require "lib_logging.sh"
     lib_require "lib_thisFile.sh"
+    
+    # ------------------------------------------------------------------------------
+    # Self-Registration
+    # Register hooks with the main library to be called at the correct time.
+    # ------------------------------------------------------------------------------
+    if function_exists "register_hooks"; then
+        register_hooks --define libCmdArgs_define_arguments --apply libCmdArgs_apply_args
+    fi
 }
 
 # --- Globals ---
@@ -218,17 +226,9 @@ libCmd_usage() {
 
 
 # ------------------------------------------------------------------------------
-# Self-Registration
-# Register hooks with the main library to be called at the correct time.
-# ------------------------------------------------------------------------------
-if function_exists "register_hooks"; then
-    register_hooks --define libCmdArgs_define_arguments --apply libCmdArgs_apply_args
-fi
-
-# ------------------------------------------------------------------------------
 # Load dependencies
 # This is called at the end to ensure all functions are defined before use.
 # ------------------------------------------------------------------------------
 if function_exists "load_dependencies"; then
     load_dependencies
-if
+fi

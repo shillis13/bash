@@ -10,6 +10,8 @@ filename="$(basename "${BASH_SOURCE[0]}")"
 isSourcedName="sourced_${filename//[^a-zA-Z0-9_]/_}"
 if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g "$isSourcedName=true"; fi
 
+echo "Sourcing lib_thisFile.sh"
+
 # --- Introspection Functions ---
 # ------------------------------------------------------------------------------
 # FUNCTION: thisFile
@@ -21,7 +23,7 @@ if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g 
 # ------------------------------------------------------------------------------
 thisFile() {
     local idx=${1:-0}
-    idx=$((idx + 1))
+    idx=$((idx + 0))
     basename "${BASH_SOURCE[$idx]}"
 }
 
@@ -35,7 +37,7 @@ thisFile() {
 # ------------------------------------------------------------------------------
 thisCaller() {
     local idx=${1:-0}
-    idx=$((idx + 2))
+    idx=$((idx + 1))
     basename "${BASH_SOURCE[$idx]}"
 }
 

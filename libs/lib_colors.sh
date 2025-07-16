@@ -16,7 +16,13 @@ if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g 
 
 # --- Dependencies ---
 load_dependencies() { 
-    readonly nothing=""
+    nothing=""
+    
+    # --- Self-Registration ---
+    # Register the hook functions with the main library.
+    if function_exists "register_hooks"; then
+        register_hooks --define libColors_define_arguments --apply libColors_apply_args
+    fi
 }
 
 # ==============================================================================
@@ -26,31 +32,31 @@ load_dependencies() {
 # Check if stdout is a terminal
 if [[ -t 1 ]]; then
     # --- Style ---
-    readonly c_reset='\e[0m'
-    readonly c_bold='\e[1m'
-    readonly c_dim='\e[2m'
-    readonly c_underline='\e[4m'
-    readonly c_blink='\e[5m'
+    c_reset='\e[0m'
+    c_bold='\e[1m'
+    c_dim='\e[2m'
+    c_underline='\e[4m'
+    c_blink='\e[5m'
 
     # --- Foreground Colors ---
-    readonly c_fg_black='\e[30m'
-    readonly c_fg_red='\e[31m'
-    readonly c_fg_green='\e[32m'
-    readonly c_fg_yellow='\e[33m'
-    readonly c_fg_blue='\e[34m'
-    readonly c_fg_magenta='\e[35m'
-    readonly c_fg_cyan='\e[36m'
-    readonly c_fg_white='\e[37m'
-    readonly c_fg_gray='\e[90m'
+    c_fg_black='\e[30m'
+    c_fg_red='\e[31m'
+    c_fg_green='\e[32m'
+    c_fg_yellow='\e[33m'
+    c_fg_blue='\e[34m'
+    c_fg_magenta='\e[35m'
+    c_fg_cyan='\e[36m'
+    c_fg_white='\e[37m'
+    c_fg_gray='\e[90m'
 
     # --- Common Combinations ---
-    readonly c_red="${c_bold}${c_fg_red}"
-    readonly c_green="${c_bold}${c_fg_green}"
-    readonly c_yellow="${c_bold}${c_fg_yellow}"
-    readonly c_blue="${c_bold}${c_fg_blue}"
-    readonly c_magenta="${c_bold}${c_fg_magenta}"
-    readonly c_cyan="${c_bold}${c_fg_cyan}"
-    readonly c_white="${c_bold}${c_fg_white}"
+    c_red="${c_bold}${c_fg_red}"
+    c_green="${c_bold}${c_fg_green}"
+    c_yellow="${c_bold}${c_fg_yellow}"
+    c_blue="${c_bold}${c_fg_blue}"
+    c_magenta="${c_bold}${c_fg_magenta}"
+    c_cyan="${c_bold}${c_fg_cyan}"
+    c_white="${c_bold}${c_fg_white}"
 fi
 
 # ==============================================================================
@@ -116,10 +122,5 @@ disable_colors() {
 # Load dependencies first
 load_dependencies
 
-# --- Self-Registration ---
-# Register the hook functions with the main library.
-if function_exists "register_hooks"; then
-    register_hooks --define libColors_define_arguments --apply libColors_apply_args
-fi
 
 
