@@ -1,7 +1,16 @@
 #!/usr/bin/env bash
+# ===============================================================================
+# LIBRARY: lib_cmdArgs.sh
 #
-# Part of the 'lib' suite.
-# Provides a powerful framework for defining and parsing command-line arguments.
+# DESCRIPTION:
+#   Part of the 'lib' suite.
+#   Provides a powerful framework for defining and parsing command-line arguments.
+#   Supports argument specification, parsing, default values, multiplicity, and usage help.
+#
+# REQUIREMENTS:
+#   - lib_logging.sh
+#   - lib_thisFile.sh
+# ===============================================================================
 
 # --- Required Sourcing ---
 source "$(dirname "${BASH_SOURCE[0]}")/lib_core.sh"
@@ -11,9 +20,15 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib_core.sh"
 isSourcedName="$(sourced_name ${BASH_SOURCE[0]})" 
 if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g "$isSourcedName=true"; fi
 
-# --- Dependencies ---
+# ------------------------------------------------------------------------------
+# FUNCTION: load_dependencies
+#
+# DESCRIPTION:
+#   Loads required dependencies for the command-line argument library.
+# ------------------------------------------------------------------------------
 load_dependencies() {
     lib_require "lib_logging.sh"
+    lib_require "lib_thisFile.sh"
 }
 
 # --- Globals ---
@@ -22,21 +37,24 @@ declare -g -A g_libCmd_argSpec
 g_libCmd_argSpec=()
 
 # ------------------------------------------------------------------------------
-# FUNCTION: functiong_define_arguments
+# FUNCTION: libCmdArgs_define_arguments
 #
-# DESCRIPTION: Defines command-line arguments for the library
+# DESCRIPTION:
+#   Defines command-line arguments for the library. Registers the help switch.
 # ------------------------------------------------------------------------------
 libCmdArgs_define_arguments() {
     # echo "Logging: libCmdArgs_define_arguments"
-    libCmd_add -t switch -f '?' --long Help -v "ShowHelp" -d "Info" -m once -u "Show the usage help"
+    libCmd_add -t switch -f '?' --long help -v "ShowHelp"  -m once -u "Show the usage help"
 }
 
 # ------------------------------------------------------------------------------
 # FUNCTION: libCmdArgs_apply_args
 #
-# DESCRIPTION: Applies logic based on parsed logging arguments.
+# DESCRIPTION:
+#   Applies logic based on parsed logging arguments. Shows help if requested.
 # ------------------------------------------------------------------------------
 libCmdArgs_apply_args() {
+    log_entry
     #echo "Logging: libCmdArgs_apply_args"
     if [[ "$ShowHelp" == "true" ]] ; then 
         libCmd_usage
@@ -51,7 +69,23 @@ libCmdArgs_apply_args() {
 #libCmdArgs_GetValue() { }
 
 
-# --- Functions ---
+# ------------------------------------------------------------------------------
+# FUNCTION: libCmd_add
+#
+# DESCRIPTION:
+#   Adds a command-line argument specification to the global argument spec array.
+#   Supports type, flags, variable name, default, required, multiplicity, and usage.
+#
+# PARAMETERS:
+#   -t <type>      : Argument type (switch, value, etc.)
+#   -f <flag>      : Short flag character
+#   --long <flag>  : Long flag name
+#   -v <var>       : Variable name to store value
+#   -d <default>   : Default value
+#   -r <y|n>       : Required flag
+#   -m <multi|once>: Multiplicity
+#   -u <usage>     : Usage/help string
+# ------------------------------------------------------------------------------
 libCmd_add() {
     log_entry
     local argType="" short_flag="" varName="" defaultValue="" required="n" multiplicity="multi" usage="" long_opt=""
@@ -81,11 +115,20 @@ libCmd_add() {
     fi
 
     local key="${long_opt:-$short_flag}"
-    log --Debug "g_libCmd_argSpec['$key']=$argType$_CMD_ARGS_DELIMITER$varName$_CMD_ARGS_DELIMITER$defaultValue$_CMD_ARGS_DELIMITER$required$_CMD_ARGS_DELIMITER$multiplicity$_CMD_ARGS_DELIMITER$usage$_CMD_ARGS_DELIMITER$short_flag$_CMD_ARGS_DELIMITER$long_opt"
+    log --Debug " -- g_libCmd_argSpec['$key']=$argType$_CMD_ARGS_DELIMITER$varName$_CMD_ARGS_DELIMITER$defaultValue$_CMD_ARGS_DELIMITER$required$_CMD_ARGS_DELIMITER$multiplicity$_CMD_ARGS_DELIMITER$usage$_CMD_ARGS_DELIMITER$short_flag$_CMD_ARGS_DELIMITER$long_opt"
     g_libCmd_argSpec["$key"]="$argType$_CMD_ARGS_DELIMITER$varName$_CMD_ARGS_DELIMITER$defaultValue$_CMD_ARGS_DELIMITER$required$_CMD_ARGS_DELIMITER$multiplicity$_CMD_ARGS_DELIMITER$usage$_CMD_ARGS_DELIMITER$short_flag$_CMD_ARGS_DELIMITER$long_opt"
+    log --Debug " -- Cmd Line Specs # = ${#g_libCmd_argSpec[@]}"
     log_exit
 }
 
+# ------------------------------------------------------------------------------
+# FUNCTION: libCmd_parse
+#
+# DESCRIPTION:
+#   Parses command-line arguments according to the registered argument specs.
+#   Sets variables, handles multiplicity, required, and default values.
+#   Warns on unknown options.
+# ------------------------------------------------------------------------------
 libCmd_parse() {
     log_entry
     while (( "$#" )); do
@@ -153,6 +196,12 @@ libCmd_parse() {
     return 0
 }
 
+# ------------------------------------------------------------------------------
+# FUNCTION: libCmd_usage
+#
+# DESCRIPTION:
+#   Prints usage information and all registered command-line options.
+# ------------------------------------------------------------------------------
 libCmd_usage() {
     log_banner "Usage: $(thisScript) [options]"
     for key in "${!g_libCmd_argSpec[@]}"; do
@@ -167,11 +216,19 @@ libCmd_usage() {
     done
 }
 
-# --- Self-Registration ---
+
+# ------------------------------------------------------------------------------
+# Self-Registration
 # Register hooks with the main library to be called at the correct time.
-if function_exists "lib_register_hooks"; then
-    lib_register_hooks --define libCmdArgs_define_arguments --apply libCmdArgs_apply_args
+# ------------------------------------------------------------------------------
+if function_exists "register_hooks"; then
+    register_hooks --define libCmdArgs_define_arguments --apply libCmdArgs_apply_args
 fi
 
-load_dependencies
-
+# ------------------------------------------------------------------------------
+# Load dependencies
+# This is called at the end to ensure all functions are defined before use.
+# ------------------------------------------------------------------------------
+if function_exists "load_dependencies"; then
+    load_dependencies
+if

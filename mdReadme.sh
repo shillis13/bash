@@ -6,7 +6,8 @@
 # DESCRIPTION: A script to read Markdown Language (md) files using different 
 #              parsers.
 # ==============================================================================
-set +x
+set -x
+set -v
 
 # --- Globals ---
 readonly g_lib_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)/libs"

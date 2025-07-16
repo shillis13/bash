@@ -66,6 +66,7 @@ function_exists() {
     # We redirect stderr to /dev/null to suppress "not found" errors
     # and grep for an exact match of the function name.
     declare -F "$1" > /dev/null
+    #functions="$(declare -F)"
     return $?
 }
 
@@ -77,10 +78,10 @@ function_exists() {
 #   initialization sequence. This is the key to resolving circular dependencies.
 #
 # USAGE:
-#   lib_register_hooks --define <func_name> --apply <func_name>
+#   register_hooks --define <func_name> --apply <func_name>
 # ------------------------------------------------------------------------------
 register_hooks() {
-    echo "Main: register_hooks: $*"
+    log_entry
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --define) g_arg_define_funcs+=("$2"); shift 2;;
@@ -88,32 +89,37 @@ register_hooks() {
             *) shift;;
         esac
     done
+    log_exit
 }
 
 # ==============================================================================
 # MAIN INITIALIZATION FUNCTION
 # ==============================================================================
 initializeScript() {
-    echo "Main: initializeScript"
+    #echo "Main: initializeScript"
+    log_entry
     # --- 1. Define arguments by calling registered hook functions ---
+    log --Debug " --- 1. Define arguments by calling registered hook functions: ${#g_arg_define_funcs[@]} ---"
     for func in "${g_arg_define_funcs[@]}"; do
         if function_exists "$func"; then
-            echo "log --Debug Calling registered fcn: $func"
             log --Debug "Calling registered fcn: $func"
             "$func"
         else
-            echo "WARN: Registered define function '$func' does not exist." >&2
+            log --Warn "WARN: Registered define function '$func' does not exist." >&2
         fi
     done
 
     # --- 2. Define arguments from the calling script ---
+    log --Debug " --- 2. Define arguments from the calling script ---"
     if ! function_exists "define_arguments"; then
-        log --Error "FATAL: Script must contain a 'define_arguments' function."
-        return 1
+        log --Warn "Script should (must?) contain a 'define_arguments' function."
+        #return 1
+    else
+        define_arguments
     fi
-    define_arguments
 
     # --- 3. Parse all defined arguments ---
+    log --Debug " --- 3. Parse all defined arguments: ${@} ---"
     if ! libCmd_parse "$@"; then
         log --Error "Failed to parse command-line arguments. Use --help for usage."
         Stack_prettyPrint --skip 1
@@ -121,9 +127,10 @@ initializeScript() {
     fi
 
     # --- 4. Apply logic by calling registered hook functions ---
+    log --Debug " --- 4. Apply logic by calling registered hook functions: ${#g_arg_apply_funcs[@]} ---"
     for func in "${g_arg_apply_funcs[@]}"; do
         if function_exists "$func"; then
-            log --Debug "$func"
+            log --Debug "Calling registered apply fcn: $func"
             "$func"
         else
             log --Warn " Registered apply function '$func' does not exist." >&2
@@ -133,4 +140,14 @@ initializeScript() {
     return 0
 }
 
-load_dependencies
+# ------------------------------------------------------------------------------
+# Call the load_dependencies and initializeScript functions to ensure all 
+# required libraries are sourced and script initialization is started.
+# This is called at the end to ensure all functions are defined before use.
+# ------------------------------------------------------------------------------
+if function_exists "load_dependencies"; then
+    load_dependencies
+fi
+if function_exists "initializeScript"; then
+    initializeScript "$@"
+fi

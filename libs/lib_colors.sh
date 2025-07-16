@@ -118,8 +118,8 @@ load_dependencies
 
 # --- Self-Registration ---
 # Register the hook functions with the main library.
-if function_exists "lib_register_hooks"; then
-    lib_register_hooks --define libColors_define_arguments --apply libColors_apply_args
+if function_exists "register_hooks"; then
+    register_hooks --define libColors_define_arguments --apply libColors_apply_args
 fi
 
 

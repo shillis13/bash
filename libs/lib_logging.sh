@@ -33,12 +33,12 @@ readonly LogLvl_Warn=2
 readonly LogLvl_Instr=4
 readonly LogLvl_Info=8
 readonly LogLvl_Debug=16
-readonly LogLvl_Entryexit=32
-readonly LogLvl_All=63 # Sum of all levels above
+readonly LogLvl_EntryExit=32
+readonly LogLvl_All=64 # Sum of all levels above
 
 # --- Configuration Globals ---
-LogLevel=${LogLvl_Info} # Default numeric level
-LogLevelStr="Debug"         # Default string for the command-line arg
+LogLevel=${LogLvl_EntryExit} # Default numeric level
+LogLevelStr="EntryExit"         # Default string for the command-line arg
 LogFile=""
 LogShowColor=true
 
@@ -71,7 +71,7 @@ libLogging_define_arguments() {
 # DESCRIPTION: Applies logic based on parsed logging arguments.
 # ------------------------------------------------------------------------------
 libLogging_apply_args() {
-    echo "Logging: libLogging_apply_args"
+    # echo "Logging: libLogging_apply_args"
     SetLogLevel "$LogLevelStr"
 }
 
@@ -87,7 +87,7 @@ ToString_LogLvl() {
     elif [[ "$1" == "$LogLvl_Info"  ]]; then  echo "INFO"
     elif [[ "$1" == "$LogLvl_Debug" ]]; then  echo "DEBUG"
     elif [[ "$1" == "$LogLvl_All"   ]]; then  echo "ALL"
-    elif [[ "$1" == "$LogLvl_Entryexit" ]]; then echo "TRACE"
+    elif [[ "$1" == "$LogLvl_EntryExit" ]]; then echo "TRACE"
     else echo "UNKNOWN"
     fi
 }
@@ -103,10 +103,14 @@ ToLogLvl_FromString() {
     level_str=$(echo "$level_str" | tr '[:lower:]' '[:upper:]')
     if   [[ "$level_str" == "NONE"  ]]; then   echo "$LogLvl_None"
     elif [[ "$level_str" == "ERROR" ]]; then   echo "$LogLvl_Error"
-    elif [[ "$level_str" == "WARN"  ]]; then   echo "$((LogLvl_Error | LogLvl_Warn))"
-    elif [[ "$level_str" == "INSTR" ]]; then   echo "$((LogLvl_Error | LogLvl_Warn | LogLvl_Instr))"
-    elif [[ "$level_str" == "INFO"  ]]; then   echo "$((LogLvl_Error | LogLvl_Warn | LogLvl_Instr | LogLvl_Info))"
-    elif [[ "$level_str" == "DEBUG" ]]; then   echo "$((LogLvl_Error | LogLvl_Warn | LogLvl_Instr | LogLvl_Info | LogLvl_Debug))"
+    # elif [[ "$level_str" == "WARN"  ]]; then   echo "$((LogLvl_Error | LogLvl_Warn))"
+    # elif [[ "$level_str" == "INSTR" ]]; then   echo "$((LogLvl_Error | LogLvl_Warn | LogLvl_Instr))"
+    # elif [[ "$level_str" == "INFO"  ]]; then   echo "$((LogLvl_Error | LogLvl_Warn | LogLvl_Instr | LogLvl_Info))"
+    # elif [[ "$level_str" == "DEBUG" ]]; then   echo "$((LogLvl_Error | LogLvl_Warn | LogLvl_Instr | LogLvl_Info | LogLvl_Debug))"
+    elif [[ "$level_str" == "WARN"  ]]; then   echo "$LogLvl_Warn"
+    elif [[ "$level_str" == "INSTR" ]]; then   echo "$LogLvl_Instr"
+    elif [[ "$level_str" == "INFO"  ]]; then   echo "$LogLvl_Info"
+    elif [[ "$level_str" == "DEBUG" ]]; then   echo "$LogLvl_Debug"
     elif [[ "$level_str" == "ALL"   ]]; then   echo "$LogLvl_All"
     elif [[ "$level_str" == "ENTRYEXIT" ]]; then echo "$LogLvl_EntryExit"
     else  
@@ -132,11 +136,12 @@ SetLogLevel() {
 #
 # PARAMETERS:
 #   $1 (integer): The log level of the message.
-#   $2 (integer): The stack frame index of the original caller.
+#   $2 (integer, optional): The stack frame index of the original caller (default 0).
 # ------------------------------------------------------------------------------
 _log_get_metadata() {
     local level=$1
-    local caller_idx=$2
+    local caller_idx=${2:-0}
+    caller_idx=$((caller_idx + 1))
     local meta_str=""
 
     # 1. Timestamp
@@ -151,7 +156,7 @@ _log_get_metadata() {
     local func_name="${FUNCNAME[$caller_idx]}"
     local line_num="${BASH_LINENO[$((caller_idx-1))]}"
     local file_name
-    file_name=$(basename "${BASH_SOURCE[$caller_idx]}")
+    file_name=$(thisCaller "$caller_idx")
 
     if [[ -z "$func_name" || "$func_name" == "main" || "$func_name" == "source" ]]; then
         func_name="<script>"
@@ -176,6 +181,12 @@ _log_get_metadata() {
 log() {
     # echo "Log: " "$@"
     local level=""
+    local caller_idx=0
+    # If first arg is a number, treat as caller_idx
+    if [[ "$1" =~ ^[0-9]+$ ]]; then
+        caller_idx=$1
+        shift
+    fi
     level=$(ToLogLvl_FromString "$1")
     shift
     local msg_only=false
@@ -191,50 +202,40 @@ log() {
     done
 
     # Check if the message should be logged
-    # echo "Log: LogLevel = ${LogLevel}     :  level = ${level}"
     if [[ "$always" == true ]] || (( (LogLevel & level) != 0 )); then
-        # echo "Log: message should print out"
         local msg="$*"
         local out_str=""
         local file_out_str=""
 
-        if [[ "$msg_only" == true ]]; then
+        # Only show metadata for non-MsgOnly and non-Instr
+        if [[ "$msg_only" == true ]] || [[ "$level" == "$LogLvl_Instr" ]]; then
             out_str="$msg"
             file_out_str="$msg"
         else
-            # Determine the correct caller index on the stack
-            local caller_idx=1
-            if [[ "${FUNCNAME[1]}" == "log_entry" || "${FUNCNAME[1]}" == "log_exit" || "${FUNCNAME[1]}" == "log_banner" ]]; then
-                caller_idx=2
-            fi
-
-            # Get metadata and append the message
+            caller_idx=$((caller_idx + 1))
             file_out_str=$(_log_get_metadata "$level" "$caller_idx")
             file_out_str+="$msg"
             out_str="$file_out_str"
-
-            # Add color for console output if enabled
-            if [[ "$LogShowColor" == true ]]; then
-                local color
-                if   [[ "$level" == "$LogLvl_Error" ]]; then     color="$c_error"
-                elif [[ "$level" == "$LogLvl_Warn"  ]]; then     color="$c_warn"
-                elif [[ "$level" == "$LogLvl_Instr" ]]; then     color="$c_instr"
-                elif [[ "$level" == "$LogLvl_Info"  ]]; then     color="$c_info"
-                elif [[ "$level" == "$LogLvl_Debug" ]]; then     color="$c_debug"
-                elif [[ "$level" == "$LogLvl_Entryexit" ]]; then color="$c_entryexit"
-                fi
-                out_str="${color}${out_str}${c_reset}"
-            fi
         fi
 
+        # Add color for console output if enabled
+        if [[ "$LogShowColor" == true ]]; then
+            local color
+            if   [[ "$level" == "$LogLvl_Error" ]]; then     color="$c_error"
+            elif [[ "$level" == "$LogLvl_Warn"  ]]; then     color="$c_warn"
+            elif [[ "$level" == "$LogLvl_Instr" ]]; then     color="$c_instr"
+            elif [[ "$level" == "$LogLvl_Info"  ]]; then     color="$c_info"
+            elif [[ "$level" == "$LogLvl_Debug" ]]; then     color="$c_debug"
+            elif [[ "$level" == "$LogLvl_EntryExit" ]]; then color="$c_entryexit"
+            fi
+            out_str="${color}${out_str}${c_reset}"
+        fi
 
         # Print to stderr and file
         echo -e "$out_str" >&2
         if [[ -n "$LogFile" ]]; then
             echo -e "$file_out_str" >> "$LogFile"
         fi
-    #else
-        # echo "Log: msg log level not enough to print"
     fi
 }
 
@@ -251,9 +252,9 @@ log_banner() {
     banner=${banner// /$banner_char}
 
     # Banners should always be visible
-    log "$LogLvl_Info" -Always -MsgOnly "$banner"
-    log "$LogLvl_Info" -Always -MsgOnly "$msg"
-    log "$LogLvl_Info" -Always -MsgOnly "$banner"
+    log -Always -MsgOnly "$banner"
+    log -Always -MsgOnly "$msg"
+    log  -Always -MsgOnly "$banner"
 }
 
 # ------------------------------------------------------------------------------
@@ -261,17 +262,19 @@ log_banner() {
 # DESCRIPTION: Convenience functions for tracing function entry and exit.
 # ------------------------------------------------------------------------------
 log_entry() {
-    log "EntryExit" "--> ENTER: ${FUNCNAME[1]}"
+    local caller_idx=1
+    log $caller_idx "EntryExit" "--> ENTER: ${FUNCNAME[1]}"
 }
 
 log_exit() {
-    log "EntryExit" "<-- EXIT:  ${FUNCNAME[1]}"
+    local caller_idx=1
+    log $caller_idx "EntryExit" "<-- EXIT:  ${FUNCNAME[1]}"
 }
 
 # --- Self-Registration ---
 # Register hooks with the main library to be called at the correct time.
-if function_exists "lib_register_hooks"; then
-    lib_register_hooks --define libLogging_define_arguments --apply libLogging_apply_args
+if function_exists "register_hooks"; then
+    register_hooks --define libLogging_define_arguments --apply libLogging_apply_args
 fi
 
 # Source the dependencies
