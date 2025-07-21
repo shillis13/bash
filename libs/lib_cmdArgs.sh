@@ -40,7 +40,8 @@ load_dependencies() {
 }
 
 # --- Globals ---
-declare -g -r _CMD_ARGS_DELIMITER=$'\x1F'
+# declare -g -r _CMD_ARGS_DELIMITER=$'\x1F'
+declare -g -r _CMD_ARGS_DELIMITER=':'
 declare -g -A g_libCmd_argSpec
 g_libCmd_argSpec=()
 
@@ -63,10 +64,11 @@ libCmdArgs_define_arguments() {
 # ------------------------------------------------------------------------------
 libCmdArgs_apply_args() {
     log_entry
-    #echo "Logging: libCmdArgs_apply_args"
+    log --Debug "ShowHelp = $ShowHelp"
     if [[ "$ShowHelp" == "true" ]] ; then 
         libCmd_usage
     fi
+    log_exit
 }
 
 # ------------------------------------------------------------------------------
@@ -96,6 +98,7 @@ libCmdArgs_apply_args() {
 # ------------------------------------------------------------------------------
 libCmd_add() {
     log_entry
+    Stack_prettyPrint
     local argType="" short_flag="" varName="" defaultValue="" required="n" multiplicity="multi" usage="" long_opt=""
     while (( "$#" )); do
         case "$1" in
@@ -211,6 +214,7 @@ libCmd_parse() {
 #   Prints usage information and all registered command-line options.
 # ------------------------------------------------------------------------------
 libCmd_usage() {
+    log_entry
     log_banner "Usage: $(thisScript) [options]"
     for key in "${!g_libCmd_argSpec[@]}"; do
         IFS="$_CMD_ARGS_DELIMITER" read -r _ varName def req mult usage short long <<< "${g_libCmd_argSpec[$key]}"

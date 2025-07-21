@@ -10,8 +10,6 @@ filename="$(basename "${BASH_SOURCE[0]}")"
 isSourcedName="sourced_${filename//[^a-zA-Z0-9_]/_}"
 if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g "$isSourcedName=true"; fi
 
-echo "Sourcing lib_thisFile.sh"
-
 # --- Introspection Functions ---
 # ------------------------------------------------------------------------------
 # FUNCTION: thisFile

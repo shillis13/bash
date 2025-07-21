@@ -28,26 +28,43 @@ load_dependencies() {
 # ==============================================================================
 # GLOBALS
 # ==============================================================================
+    # --- Style ---
+    # c_reset='\x1b[0m'
+    # c_bold='\x1b[1m'
+    # c_dim='\x1b[2m'
+    # c_underline='\x1b[4m'
+    # c_blink='\x1b[5m'
+
+    # --- Foreground Colors ---
+    # c_fg_black='\x1b[30m'
+    # c_fg_red='\x1b[31m'
+    # c_fg_green='\x1b[32m'
+    # c_fg_yellow='\x1b[33m'
+    # c_fg_blue='\x1b[34m'
+    # c_fg_magenta='\x1b[35m'
+    # c_fg_cyan='\x1b[36m'
+    # c_fg_white='\x1b[37m'
+    # c_fg_gray='\x1b[90m'
 
 # Check if stdout is a terminal
 if [[ -t 1 ]]; then
     # --- Style ---
-    c_reset='\e[0m'
-    c_bold='\e[1m'
-    c_dim='\e[2m'
-    c_underline='\e[4m'
-    c_blink='\e[5m'
+    c_reset='\x1b[0m'
+    c_bold='\x1b[1m'
+    c_dim='\x1b[2m'
+    c_underline='\x1b[4m'
+    c_blink='\x1b[5m'
 
     # --- Foreground Colors ---
-    c_fg_black='\e[30m'
-    c_fg_red='\e[31m'
-    c_fg_green='\e[32m'
-    c_fg_yellow='\e[33m'
-    c_fg_blue='\e[34m'
-    c_fg_magenta='\e[35m'
-    c_fg_cyan='\e[36m'
-    c_fg_white='\e[37m'
-    c_fg_gray='\e[90m'
+    c_fg_black='\x1b[30m'
+    c_fg_red='\x1b[31m'
+    c_fg_green='\x1b[32m'
+    c_fg_yellow='\x1b[33m'
+    c_fg_blue='\x1b[34m'
+    c_fg_magenta='\x1b[35m'
+    c_fg_cyan='\x1b[36m'
+    c_fg_white='\x1b[37m'
+    c_fg_gray='\x1b[90m'
 
     # --- Common Combinations ---
     c_red="${c_bold}${c_fg_red}"

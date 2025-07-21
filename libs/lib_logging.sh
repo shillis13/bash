@@ -46,8 +46,8 @@ readonly LogLvl_EntryExit=32
 readonly LogLvl_All=64 # Sum of all levels above
 
 # --- Configuration Globals ---
-LogLevel=${LogLvl_Info} # Default numeric level
-LogLevelStr="Info"         # Default string for the command-line arg
+LoggingLevel=${LogLvl_EntryExit} # Default numeric level
+LogLevelStr="EntryExit"         # Default string for the command-line arg
 LogFile=""
 LogShowColor=true
 
@@ -158,7 +158,7 @@ SetLogLevel() {
 #   $2 (integer, optional): The stack frame index of the original caller (default 0).
 # ------------------------------------------------------------------------------
 _log_get_metadata() {
-    local level=$1
+    local msgLogLevel=$1
     local caller_idx=${2:-0}
     caller_idx=$((caller_idx + 1))
     local meta_str=""
@@ -168,7 +168,7 @@ _log_get_metadata() {
 
     # 2. Log Level Tag
     local level_tag
-    level_tag=$(ToString_LogLvl "$level")
+    level_tag=$(ToString_LogLvl "$msgLogLevel")
     meta_str+="[${level_tag}] "
 
     # 3. Caller Info (File, Line, Function)
@@ -199,7 +199,7 @@ _log_get_metadata() {
 # ------------------------------------------------------------------------------
 log() {
     # echo "Log: " "$@"
-    local level=""
+    local msgLogLevel=""
     local caller_idx=0
     # If first arg is a number, treat as caller_idx
     if [[ "$1" =~ ^[0-9]+$ ]]; then
@@ -221,7 +221,8 @@ log() {
     done
 
     # Check if the message should be logged
-    if [[ "$always" == true ]] || (( (LogLevel & level) != 0 )); then
+    # if [[ "$always" == true ]] || (( (LogLevel & msgLogLevel) != 0 )); then
+    if [[ "$always" == true ]] || (( msgLogLevel <= LoggingLevel )); then
         local msg="$*"
         local out_str=""
         local file_out_str=""

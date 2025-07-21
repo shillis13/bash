@@ -96,7 +96,7 @@ register_hooks() {
 # MAIN INITIALIZATION FUNCTION
 # ==============================================================================
 initializeScript() {
-    #echo "Main: initializeScript"
+    echo "Main: initializeScript"
     log_entry
     # --- 1. Define arguments by calling registered hook functions ---
     log --Debug " --- 1. Define arguments by calling registered hook functions: ${#g_arg_define_funcs[@]} ---"
@@ -123,6 +123,7 @@ initializeScript() {
     if ! libCmd_parse "$@"; then
         log --Error "Failed to parse command-line arguments. Use --help for usage."
         Stack_prettyPrint --skip 1
+        log_exit
         return 1
     fi
 
@@ -137,6 +138,7 @@ initializeScript() {
         fi
     done
 
+    log_exit
     return 0
 }
 
