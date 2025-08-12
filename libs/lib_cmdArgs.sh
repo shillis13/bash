@@ -97,8 +97,8 @@ libCmdArgs_apply_args() {
 #   -u <usage>     : Usage/help string
 # ------------------------------------------------------------------------------
 libCmd_add() {
-    log_entry
-    Stack_prettyPrint
+    log_entry "called from $(thisCaller)"
+    #Stack_prettyPrint
     local argType="" short_flag="" varName="" defaultValue="" required="n" multiplicity="multi" usage="" long_opt=""
     while (( "$#" )); do
         case "$1" in

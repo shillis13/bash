@@ -14,7 +14,7 @@ if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g 
 # ------------------------------------------------------------------------------
 # FUNCTION: thisFile
 # DESCRIPTION:
-#   Returns the filename of the calling script/function at the stack frame Caller_Idx+1.
+#   Returns the filename of the calling script/function at the stack frame Caller_Idx+0.
 #   Optionally takes a Caller_Idx (default 0).
 # USAGE:
 #   thisFile [Caller_Idx]
@@ -28,7 +28,7 @@ thisFile() {
 # ------------------------------------------------------------------------------
 # FUNCTION: thisCaller
 # DESCRIPTION:
-#   Returns the filename of the caller's caller at the stack frame Caller_Idx+2.
+#   Returns the filename of the caller's caller at the stack frame Caller_Idx+1.
 #   Optionally takes a Caller_Idx (default 0).
 # USAGE:
 #   thisCaller [Caller_Idx]

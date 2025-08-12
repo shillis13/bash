@@ -46,8 +46,10 @@ readonly LogLvl_EntryExit=32
 readonly LogLvl_All=64 # Sum of all levels above
 
 # --- Configuration Globals ---
-LoggingLevel=${LogLvl_EntryExit} # Default numeric level
-LogLevelStr="EntryExit"         # Default string for the command-line arg
+#LoggingLevel=${LogLvl_EntryExit} # Default numeric level
+#LogLevelStr="EntryExit"         # Default string for the command-line arg
+LoggingLevel=${LogLvl_Info} # Default numeric level
+LogLevelStr="INFO"         # Default string for the command-line arg
 LogFile=""
 LogShowColor=true
 
@@ -90,7 +92,8 @@ libLogging_define_arguments() {
 # DESCRIPTION: Applies logic based on parsed logging arguments.
 # ------------------------------------------------------------------------------
 libLogging_apply_args() {
-    # echo "Logging: libLogging_apply_args"
+    echo "Logging: libLogging_apply_args: SetLogLevel $LogLevelStr"
+    Stack_prettyPrint --max 10
     SetLogLevel "$LogLevelStr"
 }
 
@@ -142,7 +145,7 @@ ToLogLvl_FromString() {
 # DESCRIPTION: Sets the global log level from a string.
 # ------------------------------------------------------------------------------
 SetLogLevel() {
-    # echo "SetLogLevel: $1"
+    echo "SetLogLevel: $1"
     LogLevel=$(ToLogLvl_FromString "$1")
 }
 
@@ -222,7 +225,7 @@ log() {
 
     # Check if the message should be logged
     # if [[ "$always" == true ]] || (( (LogLevel & msgLogLevel) != 0 )); then
-    if [[ "$always" == true ]] || (( msgLogLevel <= LoggingLevel )); then
+    if [[ "$always" == true ]] || (( $level <= $LoggingLevel )); then
         local msg="$*"
         local out_str=""
         local file_out_str=""
@@ -283,12 +286,16 @@ log_banner() {
 # ------------------------------------------------------------------------------
 log_entry() {
     local caller_idx=1
-    log $caller_idx "EntryExit" "--> ENTER: ${FUNCNAME[1]}"
+    local msg=""
+    if [[ $# -gt 0 ]] ; then msg="${1}" ; fi
+    log $caller_idx "EntryExit" "--> ENTER: ${FUNCNAME[1]} $msg"
 }
 
 log_exit() {
     local caller_idx=1
-    log $caller_idx "EntryExit" "<-- EXIT:  ${FUNCNAME[1]}"
+    local msg=""
+    if [[ $# -gt 0 ]] ; then msg="${1}" ; fi
+    log $caller_idx "EntryExit" "<-- EXIT:  ${FUNCNAME[1]} $msg"
 }
 
 # Source the dependencies
