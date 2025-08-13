@@ -9,8 +9,13 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib_core.sh"
 
 # Sourcing Guard
 # Create a sanitized, unique variable name from the filename.
-isSourcedName="$(sourced_name ${BASH_SOURCE[0]})" 
-if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g "$isSourcedName=true"; fi
+isSourcedName="$(sourced_name ${BASH_SOURCE[0]})"
+if declare -p "$isSourcedName" > /dev/null 2>&1; then
+    return 0
+else
+    declare -g "$isSourcedName"
+    bool_set "$isSourcedName" 1
+fi
 
 load_dependencies() {
     lib_require "lib_logging.sh"
@@ -20,20 +25,20 @@ load_dependencies() {
 }
 
 # --- Globals ---
-declare -g g_run_quiet="false"
-declare -g g_dry_run="true"
+declare -g g_run_quiet=$FALSE
+declare -g g_dry_run=$TRUE
 declare -g -r ON_ERR_EXIT="on_err_exit"
 declare -g -r ON_ERR_CONT="on_err_cont"
 
 # --- Argument Hooks ---
 libCommand_define_arguments() {
-    libCmd_add -t switch -f x --long exec -v "libCommand_exec" -d "false" -m once \
+    libCmd_add -t switch -f x --long exec -v "libCommand_exec" -d "$FALSE" -m once \
         -u "Execute commands instead of performing a dry run"
 }
 
 libCommand_apply_args() {
-    if [[ "$libCommand_exec" == "true" ]]; then
-        g_dry_run="false"
+    if (( libCommand_exec )); then
+        g_dry_run=$FALSE
     fi
 }
 
@@ -46,11 +51,11 @@ runCommand() {
     while (( "$#" )); do
         case "$1" in
             --exec|-x)
-                dry_run="false"
+                dry_run=$FALSE
                 shift
                 ;;
             --dry-run|-n)
-                dry_run="true"
+                dry_run=$TRUE
                 shift
                 ;;
             "$ON_ERR_EXIT"|"$ON_ERR_CONT")
@@ -69,8 +74,8 @@ runCommand() {
         return 1
     fi
 
-    if [[ "$dry_run" == "false" ]]; then
-        if [[ "$g_run_quiet" != "true" ]]; then
+    if (( ! dry_run )); then
+        if (( ! g_run_quiet )); then
             log_banner "Executing: ${command_str}"
         fi
         local return_code=0

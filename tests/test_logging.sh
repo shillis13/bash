@@ -28,7 +28,7 @@ run_suite() {
         log --warn "Warn Message"
         log --error "Error Message"
 
-        local test_failed_for_this_level=false
+        local test_failed_for_this_level=$FALSE
         # Verification logic remains the same...
         for level_to_verify in "${!LOG_LEVELS[@]}"; do
             if [[ "$level_to_verify" == "none" ]]; then continue; fi
@@ -37,21 +37,21 @@ run_suite() {
                 should_be_present=1
             fi
 
-            local was_seen=false
+            local was_seen=$FALSE
             if grep -q "\[${level_to_verify^^}\]" "$test_log_file"; then
-                was_seen=true
+                was_seen=$TRUE
             fi
 
-            if (( should_be_present == 1 )) && [[ "$was_seen" == false ]]; then
+            if (( should_be_present == 1 )) && (( ! was_seen )); then
                 log --error "FAIL: Expected to find '[${level_to_verify^^}]' in log, but it was absent."
-                test_failed_for_this_level=true
-            elif (( should_be_present == 0 )) && [[ "$was_seen" == true ]]; then
+                test_failed_for_this_level=$TRUE
+            elif (( should_be_present == 0 )) && (( was_seen )); then
                 log --error "FAIL: Did NOT expect to find '[${level_to_verify^^}]' in log, but it was present."
-                test_failed_for_this_level=true
+                test_failed_for_this_level=$TRUE
             fi
         done
 
-        if [[ "$test_failed_for_this_level" == false ]]; then
+        if (( ! test_failed_for_this_level )); then
             log_always "PASS: Log level '$level_to_set' filtered messages correctly."
         else
             overall_status=1

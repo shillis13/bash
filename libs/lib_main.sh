@@ -18,8 +18,13 @@ source "$g_lib_dir/lib_core.sh"
 
 # Sourcing Guard
 # Create a sanitized, unique variable name from the filename.
-isSourcedName="$(sourced_name ${BASH_SOURCE[0]})" 
-if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g "$isSourcedName=true"; fi
+isSourcedName="$(sourced_name ${BASH_SOURCE[0]})"
+if declare -p "$isSourcedName" > /dev/null 2>&1; then
+    return 0
+else
+    declare -g "$isSourcedName"
+    bool_set "$isSourcedName" 1
+fi
 
 # --- Dependencies ---
 load_dependencies() {

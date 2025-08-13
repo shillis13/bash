@@ -40,13 +40,13 @@ lib_require "lib_bool.sh"
 
 define_arguments() {
     # Core script options
-    libCmd_add -t switch -f n --long dry-run  -v "gp_dry_run"   -d "false" -m once -u "Show actions without running them"
-    libCmd_add -t switch      --long no-add   -v "gp_no_add"    -d "false" -m once -u "Skip 'git add .'"
-    libCmd_add -t switch      --long amend    -v "gp_amend"     -d "false" -m once -u "Amend last commit with staged changes and message"
-    libCmd_add -t switch -f s --long signoff  -v "gp_signoff"   -d "false" -m once -u "Add Signed-off-by trailer"
-    libCmd_add -t switch -f t --long tags     -v "gp_push_tags" -d "false" -m once -u "Also push tags"
+    libCmd_add -t switch -f n --long dry-run  -v "gp_dry_run"   -d "$FALSE" -m once -u "Show actions without running them"
+    libCmd_add -t switch      --long no-add   -v "gp_no_add"    -d "$FALSE" -m once -u "Skip 'git add .'"
+    libCmd_add -t switch      --long amend    -v "gp_amend"     -d "$FALSE" -m once -u "Amend last commit with staged changes and message"
+    libCmd_add -t switch -f s --long signoff  -v "gp_signoff"   -d "$FALSE" -m once -u "Add Signed-off-by trailer"
+    libCmd_add -t switch -f t --long tags     -v "gp_push_tags" -d "$FALSE" -m once -u "Also push tags"
     libCmd_add -t value -f m  --long message  -v "gp_message"   -d "."     -m once -u "Commit message (default '.')"
-    libCmd_add -t switch -f q --long quiet    -v "gp_quiet"     -d "false" -m once -u "Suppress run banners"
+    libCmd_add -t switch -f q --long quiet    -v "gp_quiet"     -d "$FALSE" -m once -u "Suppress run banners"
 }
 
 # --- Implementation -----------------------------------------------------------
@@ -89,14 +89,13 @@ _gpush_main() {
     log_entry
 
     # Convert lib_cmdArgs string booleans to canonical 0/1 for logic.
-    bool_set GP_DRY_RUN   "${gp_dry_run:-false}"
-    bool_set GP_NO_ADD    "${gp_no_add:-false}"
-    bool_set GP_AMEND     "${gp_amend:-false}"
-    bool_set GP_SIGNOFF   "${gp_signoff:-false}"
-    bool_set GP_PUSH_TAGS "${gp_push_tags:-false}"
+    bool_set GP_DRY_RUN   "${gp_dry_run:-$FALSE}"
+    bool_set GP_NO_ADD    "${gp_no_add:-$FALSE}"
+    bool_set GP_AMEND     "${gp_amend:-$FALSE}"
+    bool_set GP_SIGNOFF   "${gp_signoff:-$FALSE}"
+    bool_set GP_PUSH_TAGS "${gp_push_tags:-$FALSE}"
 
-    # Quiet banners if requested (lib_command checks this string var)
-    if [[ "${gp_quiet:-false}" == "true" ]]; then g_run_quiet="true"; fi
+    bool_set g_run_quiet  "${gp_quiet:-$FALSE}"
 
     # Determine commit message precedence: --message beats positional; default "."
     local comment="$gp_message"

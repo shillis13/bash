@@ -16,8 +16,13 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib_core.sh"
 
 # Sourcing Guard
 # Create a sanitized, unique variable name from the filename.
-isSourcedName="$(sourced_name ${BASH_SOURCE[0]})" 
-if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g "$isSourcedName=true"; fi
+isSourcedName="$(sourced_name ${BASH_SOURCE[0]})"
+if declare -p "$isSourcedName" > /dev/null 2>&1; then
+    return 0
+else
+    declare -g "$isSourcedName"
+    bool_set "$isSourcedName" 1
+fi
 
 # --- Dependencies ---
 load_dependencies() {
@@ -158,14 +163,14 @@ Stack_get() {
 #   --no-color (switch, optional): Disables colored output.
 # ------------------------------------------------------------------------------
 Stack_prettyPrint() {
-    local use_color=true
+    local use_color=$TRUE
     # Skip this prettyPrint function itself by default.
     local skip=1
     local max=-1
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --no-color) use_color=false; shift ;;
+            --no-color) use_color=$FALSE; shift ;;
             --skip) skip=$2; shift 2 ;;
             --max) max=$2; shift 2 ;;
             *) shift ;;
@@ -200,7 +205,7 @@ Stack_prettyPrint() {
     header_func=$(PadText "Function" "$max_func" "center")
     header_line=$(PadText "Line" "$max_line" "center")
 
-    if $use_color; then
+    if (( use_color )); then
         printf "%s%s  %s  %s%s\n" "${c_bold}${c_cyan}" "$header_file" "$header_func" "$header_line" "${c_reset}"
     else
         printf "%s  %s  %s\n" "$header_file" "$header_func" "$header_line"
@@ -215,7 +220,7 @@ Stack_prettyPrint() {
         p_func=$(PadText "$func" "$max_func" "left" " ")
         p_line=$(PadText "$line" "$max_line" "right" " ")
 
-        if $use_color; then
+        if (( use_color )); then
             printf "%s%s%s  %s%s%s  %s%s%s\n" "${c_yellow}" "$p_file" "${c_reset}" "${c_green}" "$p_func" "${c_reset}" "${c_cyan}" "$p_line" "${c_reset}"
         else
             printf "%s  %s  %s\n" "$p_file" "$p_func" "$p_line"

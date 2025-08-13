@@ -17,8 +17,13 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib_core.sh"
 
 # Sourcing Guard
 # Create a sanitized, unique variable name from the filename.
-isSourcedName="$(sourced_name ${BASH_SOURCE[0]})" 
-if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g "$isSourcedName=true"; fi
+isSourcedName="$(sourced_name ${BASH_SOURCE[0]})"
+if declare -p "$isSourcedName" > /dev/null 2>&1; then
+    return 0
+else
+    declare -g "$isSourcedName"
+    bool_set "$isSourcedName" 1
+fi
 
 # ------------------------------------------------------------------------------
 # FUNCTION: load_dependencies
@@ -65,7 +70,7 @@ libCmdArgs_define_arguments() {
 libCmdArgs_apply_args() {
     log_entry
     log --Debug "ShowHelp = $ShowHelp"
-    if [[ "$ShowHelp" == "true" ]] ; then 
+    if (( ShowHelp )) ; then
         libCmd_usage
     fi
     log_exit
@@ -176,7 +181,7 @@ libCmd_parse() {
         IFS="$_CMD_ARGS_DELIMITER" read -r argType varName _ _ multiplicity _ _ <<< "$arg_spec"
         local value=""
         if [[ "$argType" == "switch" ]]; then
-            value="true"; shift
+            value=$TRUE; shift
         else
             if [[ -n "$value_from_equals" ]]; then
                 value="$value_from_equals"; shift
