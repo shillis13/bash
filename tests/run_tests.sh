@@ -13,16 +13,14 @@ source "$SCRIPT_DIR/../libs/lib_main.sh"
 # ==============================================================================
 
 define_arguments() {
-    lib_logging_initialize
     libCmd_add -t switch -f h --long help -v "showHelp" -d "false" -m once -u "Display this help message."
     libCmd_add -t value  -f t --long test -v "tests_to_run" -m multi -u "Optional: Specify a test to run. Defaults to all."
 }
 
 main() {
-    if ! lib_initializeScript "$@"; then
+    if ! initializeScript "$@"; then
         return 1
     fi
-    set_log_level
 
     local test_dir="${SCRIPT_DIR}"
     if [[ ! -d "$test_dir" ]]; then

@@ -93,7 +93,6 @@ libLogging_define_arguments() {
 # ------------------------------------------------------------------------------
 libLogging_apply_args() {
     echo "Logging: libLogging_apply_args: SetLogLevel $LogLevelStr"
-    Stack_prettyPrint --max 10
     SetLogLevel "$LogLevelStr"
 }
 

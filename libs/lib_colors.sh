@@ -49,22 +49,22 @@ load_dependencies() {
 # Check if stdout is a terminal
 if [[ -t 1 ]]; then
     # --- Style ---
-    c_reset='\x1b[0m'
-    c_bold='\x1b[1m'
-    c_dim='\x1b[2m'
-    c_underline='\x1b[4m'
-    c_blink='\x1b[5m'
+    c_reset=$'\x1b[0m'
+    c_bold=$'\x1b[1m'
+    c_dim=$'\x1b[2m'
+    c_underline=$'\x1b[4m'
+    c_blink=$'\x1b[5m'
 
     # --- Foreground Colors ---
-    c_fg_black='\x1b[30m'
-    c_fg_red='\x1b[31m'
-    c_fg_green='\x1b[32m'
-    c_fg_yellow='\x1b[33m'
-    c_fg_blue='\x1b[34m'
-    c_fg_magenta='\x1b[35m'
-    c_fg_cyan='\x1b[36m'
-    c_fg_white='\x1b[37m'
-    c_fg_gray='\x1b[90m'
+    c_fg_black=$'\x1b[30m'
+    c_fg_red=$'\x1b[31m'
+    c_fg_green=$'\x1b[32m'
+    c_fg_yellow=$'\x1b[33m'
+    c_fg_blue=$'\x1b[34m'
+    c_fg_magenta=$'\x1b[35m'
+    c_fg_cyan=$'\x1b[36m'
+    c_fg_white=$'\x1b[37m'
+    c_fg_gray=$'\x1b[90m'
 
     # --- Common Combinations ---
     c_red="${c_bold}${c_fg_red}"

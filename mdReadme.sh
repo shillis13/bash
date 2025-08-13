@@ -53,11 +53,11 @@ define_arguments() {
 # ------------------------------------------------------------------------------
 select_parser() {
     local parser=""
-    if [ "$use_glow" ] ;  then
+    if [[ "$glow" == "true" ]]; then
         parser="glow"
-    elif [ "$use_mdcat" ] ; then
+    elif [[ "$use_mdcat" == "true" ]]; then
         parser="mdcat"
-    elif [ "$use_rich" ] ; then
+    elif [[ "$use_rich" == "true" ]]; then
         parser="rich"
     else
         parser="$def_parser"
@@ -86,9 +86,9 @@ main() {
     parser="$(select_parser)"
         
     # 3. Orchestrate the core logic, using the globally-set $g_execution_flag.
-    log --debug "$hande_parser $p_args"
+    log --debug "$parser $p_args"
 
-    runCommand "$hande_parser $p_args"
+    runCommand "$parser $p_args"
 
     log --debug "✅ Script finished."
 }
@@ -97,5 +97,5 @@ main() {
 # Main Execution Guard
 # ==============================================================================
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-    main "$@" "--exec"
+    main "$@"
 fi
