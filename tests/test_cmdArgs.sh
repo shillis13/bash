@@ -11,7 +11,7 @@ run_suite() {
     # Define a local function for this test scope
     define_test_args() {
         libCmd_add -t value  --long input-file -f i -v "inputFile" -r y -u "Input file"
-        libCmd_add -t switch --long verbose    -f v -v "verboseMode" -d "false" -u "Enable verbose mode"
+        libCmd_add -t switch --long verbose    -f v -v "verboseMode" -d "$FALSE" -u "Enable verbose mode"
         libCmd_add -t value  --long packages   -f p -v "pkg_list" -m multi -u "Packages to install"
     }
 
@@ -21,21 +21,21 @@ run_suite() {
     define_test_args
     libCmd_parse --input-file "my.txt" -v --packages "vim" -p "git"
 
-    local test_failed=false
+    local test_failed=$FALSE
     if [[ "$inputFile" != "my.txt" ]]; then
         log --error "FAIL: inputFile was not set correctly. Expected 'my.txt', got '$inputFile'."
-        test_failed=true
+        test_failed=$TRUE
     fi
-    if [[ "$verboseMode" != "true" ]]; then
+    if (( ! verboseMode )); then
         log --error "FAIL: verboseMode switch was not set correctly."
-        test_failed=true
+        test_failed=$TRUE
     fi
     if [[ "${#pkg_list[@]}" -ne 2 ]] || [[ "${pkg_list[0]}" != "vim" ]] || [[ "${pkg_list[1]}" != "git" ]]; then
         log --error "FAIL: pkg_list multi-argument was not set correctly."
-        test_failed=true
+        test_failed=$TRUE
     fi
 
-    if [[ "$test_failed" == false ]]; then
+    if (( ! test_failed )); then
         log --test "PASS: libCmd_parse correctly set all variable types."
     else
         overall_status=1

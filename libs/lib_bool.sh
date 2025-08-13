@@ -20,8 +20,12 @@
 # ---- Canonical constants -----------------------------------------------------
 # Note: not exported by default. Export if children need them:
 #   export TRUE FALSE
-declare -ri TRUE=1
-declare -ri FALSE=0
+if ! declare -p TRUE &>/dev/null; then
+  declare -ri TRUE=1
+fi
+if ! declare -p FALSE &>/dev/null; then
+  declare -ri FALSE=0
+fi
 
 
 # ---- API ---------------------------------------------------------------------

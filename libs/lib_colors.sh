@@ -11,8 +11,13 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib_core.sh"
 
 # Sourcing Guard
 # Create a sanitized, unique variable name from the filename.
-isSourcedName="$(sourced_name ${BASH_SOURCE[0]})" 
-if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g "$isSourcedName=true"; fi
+isSourcedName="$(sourced_name ${BASH_SOURCE[0]})"
+if declare -p "$isSourcedName" > /dev/null 2>&1; then
+    return 0
+else
+    declare -g "$isSourcedName"
+    bool_set "$isSourcedName" 1
+fi
 
 # --- Dependencies ---
 load_dependencies() { 
@@ -87,7 +92,7 @@ fi
 #   Defines the command-line arguments related to color output.
 # ------------------------------------------------------------------------------
 libColors_define_arguments() {
-    libCmd_add -t switch -f n --long no-color -v "g_no_color" -d "false" -m once -u "Disable all color output."
+    libCmd_add -t switch -f n --long no-color -v "g_no_color" -d "$FALSE" -m once -u "Disable all color output."
 }
 
 # ------------------------------------------------------------------------------
@@ -97,7 +102,7 @@ libColors_define_arguments() {
 #   Applies the logic for color-related arguments after parsing.
 # ------------------------------------------------------------------------------
 libColors_apply_args() {
-    if [[ "${g_no_color:-false}" == "true" ]]; then
+    if (( g_no_color )); then
         disable_colors
     fi
 }

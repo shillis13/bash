@@ -6,9 +6,15 @@
 # Sourcing Guard
 # Create a sanitized, unique variable name from the filename.
 # Not using lib_core.sh so as to not cause a dependency
+source "$(dirname "${BASH_SOURCE[0]}")/lib_bool.sh"
 filename="$(basename "${BASH_SOURCE[0]}")"
 isSourcedName="sourced_${filename//[^a-zA-Z0-9_]/_}"
-if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g "$isSourcedName=true"; fi
+if declare -p "$isSourcedName" > /dev/null 2>&1; then
+    return 0
+else
+    declare -g "$isSourcedName"
+    bool_set "$isSourcedName" 1
+fi
 
 # --- Dependencies ---
 

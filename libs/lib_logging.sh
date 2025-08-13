@@ -14,8 +14,13 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib_core.sh"
 
 # Sourcing Guard
 # Create a sanitized, unique variable name from the filename.
-isSourcedName="$(sourced_name ${BASH_SOURCE[0]})" 
-if declare -p "$isSourcedName" > /dev/null 2>&1; then return 0; else declare -g "$isSourcedName=true"; fi
+isSourcedName="$(sourced_name ${BASH_SOURCE[0]})"
+if declare -p "$isSourcedName" > /dev/null 2>&1; then
+    return 0
+else
+    declare -g "$isSourcedName"
+    bool_set "$isSourcedName" 1
+fi
 
 # --- Dependencies ---
 load_dependencies() {
@@ -51,7 +56,7 @@ readonly LogLvl_All=64 # Sum of all levels above
 LoggingLevel=${LogLvl_Info} # Default numeric level
 LogLevelStr="INFO"         # Default string for the command-line arg
 LogFile=""
-LogShowColor=true
+LogShowColor=$TRUE
 
 # Colors are initially nothing because lib_colors has not been initialized  yet
 c_error=""
@@ -210,27 +215,27 @@ log() {
     fi
     level=$(ToLogLvl_FromString "$1")
     shift
-    local msg_only=false
-    local always=false
+    local msg_only=$FALSE
+    local always=$FALSE
 
     # Parse flags
     while true; do
         case "$1" in
-            -MsgOnly) msg_only=true; shift;;
-            -Always)  always=true;   shift;;
+            -MsgOnly) msg_only=$TRUE; shift;;
+            -Always)  always=$TRUE;   shift;;
             *) break;;
         esac
     done
 
     # Check if the message should be logged
-    # if [[ "$always" == true ]] || (( (LogLevel & msgLogLevel) != 0 )); then
-    if [[ "$always" == true ]] || (( $level <= $LoggingLevel )); then
+    # if (( always )) || (( (LogLevel & msgLogLevel) != 0 )); then
+    if (( always )) || (( level <= LoggingLevel )); then
         local msg="$*"
         local out_str=""
         local file_out_str=""
 
         # Only show metadata for non-MsgOnly and non-Instr
-        if [[ "$msg_only" == true ]] || [[ "$level" == "$LogLvl_Instr" ]]; then
+        if (( msg_only )) || [[ "$level" == "$LogLvl_Instr" ]]; then
             out_str="$msg"
             file_out_str="$msg"
         else
@@ -241,7 +246,7 @@ log() {
         fi
 
         # Add color for console output if enabled
-        if [[ "$LogShowColor" == true ]]; then
+        if (( LogShowColor )); then
             local color
             if   [[ "$level" == "$LogLvl_Error" ]]; then     color="$c_error"
             elif [[ "$level" == "$LogLvl_Warn"  ]]; then     color="$c_warn"
