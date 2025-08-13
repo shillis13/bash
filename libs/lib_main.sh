@@ -150,6 +150,10 @@ initializeScript() {
 if function_exists "load_dependencies"; then
     load_dependencies
 fi
-if function_exists "initializeScript"; then
-    initializeScript "$@"
-fi
+#
+# The main library should not automatically invoke `initializeScript` when it is
+# sourced.  Scripts that use this library will explicitly call
+# `initializeScript` after defining their own arguments and logic.
+# Removing the automatic invocation avoids confusing double initialization and
+# unexpected stack traces during startup.
+#
