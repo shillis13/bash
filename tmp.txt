@@ -1,0 +1,36 @@
+$ ps -p $$ -o comm=
+/bin/bash
+
+$ ps -p $$ -o args=
+/bin/bash -l
+
+$ echo "$BASH"
+/bin/bash
+
+$ file "$BASH"
+/bin/bash: Mach-O universal binary with 2 architectures: [x86_64:Mach-O 64-bit executable x86_64] [arm64e:Mach-O 64-bit executable arm64e]
+/bin/bash (for architecture x86_64):	Mach-O 64-bit executable x86_64
+/bin/bash (for architecture arm64e):	Mach-O 64-bit executable arm64e
+
+$ dscl . -read /Users/$USER UserShell
+UserShell: /bin/bash
+
+$ uname -m
+x86_64
+
+$ exec /usr/bin/arch -arm64 /bin/bash -l
+
+The default interactive shell is now zsh.
+To update your account to use zsh, please run `chsh -s /bin/zsh`.
+For more details, please visit https://support.apple.com/kb/HT208050.
+
+$ echo "$BASH" && file "$BASH"
+/bin/bash
+/bin/bash: Mach-O universal binary with 2 architectures: [x86_64:Mach-O 64-bit executable x86_64] [arm64e:Mach-O 64-bit executable arm64e]
+/bin/bash (for architecture x86_64):	Mach-O 64-bit executable x86_64
+/bin/bash (for architecture arm64e):	Mach-O 64-bit executable arm64e
+
+$ uname -m 
+x86_64
+
+
