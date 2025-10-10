@@ -31,8 +31,11 @@
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 source "${SCRIPT_DIR}/libs/lib_core.sh"
 
-# We want booleans; require the bool lib explicitly (lib_main does not).
-lib_require "lib_bool.sh"
+# --- Dependency Loader ---------------------------------------------------------
+load_dependencies() {
+    lib_require "lib_main.sh"
+    lib_require "lib_bool.sh"
+}
 
 # --- Script argument definitions (registered later by lib_main) ---------------
 # We only DEFINE here; actual parsing happens inside lib_main.initializeScript().
@@ -181,16 +184,19 @@ _gpush_main() {
     log_exit
 }
 
-# --- Load the rest of the libraries + parse args ------------------------------
-# After this source, lib_main will:
-#   1) load dependencies (logging/colors/cmdargs/etc.)
-#   2) call our define_arguments()
-#   3) parse CLI into gp_* vars
-#   4) apply library hooks (e.g., logging level, colors)
-source "${SCRIPT_DIR}/libs/lib_main.sh" "$@"
+# --- Main Orchestration --------------------------------------------------------
+main() {
+    load_dependencies
+    if ! initializeScript "$@"; then
+        return 1
+    fi
+
+    _gpush_main "$@"
+}
 
 # --- Entrypoint ----------------------------------------------------------------
-# Call the worker with the original args so it can derive positional message.
-_gpush_main "$@"
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    main "$@"
+fi
 
 
