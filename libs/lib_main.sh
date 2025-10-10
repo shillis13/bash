@@ -148,17 +148,30 @@ initializeScript() {
 }
 
 # ------------------------------------------------------------------------------
-# Call the load_dependencies and initializeScript functions to ensure all 
-# required libraries are sourced and script initialization is started.
-# This is called at the end to ensure all functions are defined before use.
+# Usage Example:
+#   load_dependencies() { lib_require "lib_main.sh"; }
+#   main() {
+#       load_dependencies
+#       initializeScript "$@"
+#       # script logic
+#   }
+#   [[ "${BASH_SOURCE[0]}" == "$0" ]] && main "$@"
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# Call the load_dependencies function so the common libraries are ready for the
+# calling script.  This mirrors the explicit initialization pattern while still
+# providing an optional compatibility path below.
 # ------------------------------------------------------------------------------
 if function_exists "load_dependencies"; then
     load_dependencies
 fi
-#
-# The main library should not automatically invoke `initializeScript` when it is
-# sourced.  Scripts that use this library will explicitly call
-# `initializeScript` after defining their own arguments and logic.
-# Removing the automatic invocation avoids confusing double initialization and
-# unexpected stack traces during startup.
-#
+
+# ------------------------------------------------------------------------------
+# Compatibility: legacy scripts that relied on lib_main automatically
+# initializing can opt-in by exporting LIB_MAIN_AUTO_INIT=1 before sourcing this
+# file.  New scripts should call initializeScript explicitly.
+# ------------------------------------------------------------------------------
+if [[ -n "${LIB_MAIN_AUTO_INIT:-}" && "${LIB_MAIN_AUTO_INIT}" != "0" ]]; then
+    initializeScript "$@"
+fi
