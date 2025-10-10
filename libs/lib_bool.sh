@@ -27,6 +27,16 @@ if ! declare -p FALSE &>/dev/null; then
   declare -ri FALSE=0
 fi
 
+bool_is_true() {
+  # portable to macOS bash 3.2 (no ${var,,})
+  local v; v="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
+  case "$v" in
+    1|true|t|yes|y|on|enable|enabled) return 0 ;;
+    0|false|f|no|n|off|disable|disabled|"") return 1 ;;
+    *) return 1 ;;
+  esac
+}
+bool_is_false(){ ! bool_is_true "$1"; }
 
 # ---- API ---------------------------------------------------------------------
 # bool STRING -> prints 1 (true) or 0 (false)

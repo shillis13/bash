@@ -21,7 +21,18 @@ define_arguments() {
 
 # --- Dependencies -------------------------------------------------------------
 load_dependencies() {
+    lib_require "lib_bool.sh"
     lib_require "lib_main.sh"
+}
+
+# --- Main Orchestration --------------------------------------------------------
+main() {
+    load_dependencies
+    if ! initializeScript "$@"; then
+        return 1
+    fi
+
+    _gpull_main "$@"
 }
 
 # --- Main Logic ---------------------------------------------------------------
@@ -54,10 +65,7 @@ _gpull_main() {
 
 # --- Entry Point --------------------------------------------------------------
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
-    load_dependencies
-    if ! initializeScript "$@"; then
-        exit 1
-    fi
-    _gpull_main "$@"
+    source "${SCRIPT_DIR}/libs/lib_main.sh" "$@"
+    main "$@"
 fi
 
