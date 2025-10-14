@@ -19,6 +19,13 @@ fi
 
 load_dependencies() {
     lib_require "lib_logging.sh"
+    lib_require "lib_colors.sh"   
+
+    # Initialize color mapping (env overrides OK)
+    LIB_COLOR_DRY=${LIB_COLOR_DRY:-$c_green}
+    LIB_COLOR_EXEC=${LIB_COLOR_EXEC:-$c_blue}
+    LIB_COLOR_RESET=${LIB_COLOR_RESET:-$c_reset}
+
     if function_exists "register_hooks"; then
         register_hooks --define libCommand_define_arguments --apply libCommand_apply_args
     fi
@@ -76,7 +83,7 @@ runCommand() {
 
     if (( ! dry_run )); then
         if (( ! g_run_quiet )); then
-            log_banner "Executing: ${command_str}"
+            log_banner "${LIB_COLOR_EXEC}Executing: ${command_str}${LIB_COLOR_RESET}"
         fi
         local return_code=0
         eval "${command_str}"
@@ -89,7 +96,7 @@ runCommand() {
         fi
         return $return_code
     else
-        log_banner "Dry Run: ${command_str}"
+        log_banner "${LIB_COLOR_DRY}Dry Run: ${command_str}${LIB_COLOR_RESET}"
     fi
 }
 
