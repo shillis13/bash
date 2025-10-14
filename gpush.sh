@@ -4,68 +4,47 @@
 #
 # DESCRIPTION:
 #   Smart git commit/push wrapper that also detects and commits/pushes
-#   submodule changes automatically.  Useful for projects that maintain
-#   data or content in nested submodules (e.g., 01_chat_data/raw).
+#   submodule changes automatically. Useful for repos with nested submodules.
 #
 #   • Adds, commits, and pushes submodules first (if any changes exist).
 #   • Then commits/pushes the parent repo pointer update.
-#   • Behaves identically to before when no submodules are dirty.
-#
-#   Integrates with the project’s bash libs for logging, argument parsing,
-#   dry-run execution, colors, and booleans.
+#   • Defaults to DRY-RUN (from lib_command.sh). Use -x/--exec to apply.
 #
 # USAGE:
 #   ./gpush.sh [options] [commit message]
 #
-#   Options (also shown via --help):
-#     -n, --dry-run     Show actions without executing them
+#   Options (script-specific; lib options like -x/--exec are included via hooks):
 #         --no-add      Skip "git add ."
-#         --amend       Amend last commit with current staged changes & message
-#     -s, --signoff     Add Signed-off-by trailer
-#     -t, --tags        Also push tags
-#     -m, --message     Commit message (default ".")
-#     -q, --quiet       Suppress run banners (still logs)
-#     -?, --help        Show library-generated help
+#         --amend       Amend last commit with staged changes & message
+#   -s, --signoff       Add Signed-off-by trailer
+#   -t, --tags          Also push tags
+#   -m, --message MSG   Commit message (default ".")
+#   -q, --quiet         Suppress run banners (still logs)
 #
-# NOTES:
-#   • If any submodules contain uncommitted changes, each is committed/pushed
-#     first (using the same message unless otherwise specified).
-#   • After submodules are updated, the parent repo pointer is refreshed and
-#     committed automatically.
-#   • Options and lib integration are identical to previous versions.
+#   Execution mode (from lib_command.sh):
+#   -x, --exec          Execute commands instead of dry-run (default is dry-run)
 # ==============================================================================
 
 # --- Bootstrap libs -----------------------------------------------------------
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 source "${SCRIPT_DIR}/libs/lib_core.sh"
 
-# --- Dependency Loader ---------------------------------------------------------
+# --- Dependencies -------------------------------------------------------------
 load_dependencies() {
     lib_require "lib_main.sh"
     lib_require "lib_bool.sh"
+    lib_require "lib_command.sh"   # ensures runCommand and -x/--exec hook are registered
 }
 
 # --- Argument definitions -----------------------------------------------------
 define_arguments() {
-    libCmd_add -t switch -f n --long dry-run  -v "gp_dry_run"   -d "$TRUE"  -m once -u "Show actions without running them (default)"
-    libCmd_add -t switch      --long apply    -v "gp_apply"     -d "$FALSE" -m once -u "Actually apply git commands (dry-run is the default)"
     libCmd_add -t switch      --long no-add   -v "gp_no_add"    -d "$FALSE" -m once -u "Skip 'git add .'"
     libCmd_add -t switch      --long amend    -v "gp_amend"     -d "$FALSE" -m once -u "Amend last commit with staged changes and message"
     libCmd_add -t switch -f s --long signoff  -v "gp_signoff"   -d "$FALSE" -m once -u "Add Signed-off-by trailer"
     libCmd_add -t switch -f t --long tags     -v "gp_push_tags" -d "$FALSE" -m once -u "Also push tags"
     libCmd_add -t value  -f m --long message  -v "gp_message"   -d "."      -m once -u "Commit message (default '.')"
     libCmd_add -t switch -f q --long quiet    -v "gp_quiet"     -d "$FALSE" -m once -u "Suppress run banners"
-}
-
-# --- Helper: run commands safely ---------------------------------------------
-_run() {
-    local do_exec=$1; shift
-    local cmd_str="$*"
-    if (( do_exec )); then
-        runCommand --exec "$cmd_str"
-    else
-        runCommand "$cmd_str"
-    fi
+    # NOTE: -x/--exec is provided by lib_command.sh via register_hooks
 }
 
 _first_positional_message() {
@@ -82,55 +61,43 @@ _first_positional_message() {
 # --- Submodule Auto-Commit Helper --------------------------------------------
 _commit_submodules() {
     local comment="$1"
-    local dry_run="$2"
 
     if ! git submodule status &>/dev/null; then return 0; fi
 
     local changed_subs
     changed_subs=$(git submodule foreach --quiet 'git diff --quiet || echo $path')
-    if [[ -z "$changed_subs" ]]; then return 0; fi
+    [[ -z "$changed_subs" ]] && return 0
 
     log --Info "Detected submodule changes:"
     echo "$changed_subs" | while read -r sub; do
-        [[ -z "$sub" ]] && continue
-        log --Info "→ committing in submodule: $sub"
-        (
-            cd "$sub" || exit
-            git add .
-            if ! git diff --cached --quiet; then
-                local esc_msg; printf -v esc_msg %q "$comment"
-                if (( dry_run )); then
-                    echo "[DRY-RUN] git commit -m $esc_msg && git push"
-                else
-                    git commit -m "$comment" && git push || log --Warn "Submodule $sub push failed"
-                fi
-            fi
-        )
-    done
-    log --Info "Refreshing submodule pointers in main repo."
-    git submodule update --remote
-    git add .
+    [[ -z "$sub" ]] && continue
+    log --Info "→ committing in submodule: $sub"
+    # Stage everything in submodule
+    runCommand "git -C \"$sub\" add ."
+
+    # Only commit if something is staged
+    if ! git -C "$sub" diff --cached --quiet; then
+        local esc_msg; printf -v esc_msg %q "$comment"
+        runCommand "git -C \"$sub\" commit -m $esc_msg"
+        runCommand "git -C \"$sub\" push"
+    fi
+done
+
+log --Info "Refreshing submodule pointers in main repo."
+runCommand "git submodule update --remote"
+runCommand "git add ."
 }
 
-# --- Main Worker -------------------------------------------------------------
+# --- Main Worker --------------------------------------------------------------
 _gpush_main() {
     log_entry
-    bool_set GP_DRY_RUN   "${gp_dry_run:-$TRUE}"
-    bool_set GP_NO_ADD    "${gp_no_add:-$FALSE}"
-    bool_set GP_AMEND     "${gp_amend:-$FALSE}"
-    bool_set GP_SIGNOFF   "${gp_signoff:-$FALSE}"
-    bool_set GP_PUSH_TAGS "${gp_push_tags:-$FALSE}"
-    bool_set GP_APPLY     "${gp_apply:-$FALSE}"   
-    bool_set g_run_quiet  "${gp_quiet:-$FALSE}"
 
-    # Allow --apply to override default dry-run mode
-    if [[ "$GP_APPLY" == "$TRUE" ]]; then
-        GP_DRY_RUN="$FALSE"
-        log --Info "--apply detected; executing real changes"
-    else
-        log --Info "Dry-run mode active by default (use --apply to execute)"
+    # Quiet banners if requested
+    if bool_is_true "$gp_quiet"; then
+        g_run_quiet=$TRUE
     fi
 
+    # Compose commit message (flag overrides positional if both provided)
     local comment="$gp_message"
     if [[ -z "$comment" || "$comment" == "." ]]; then
         local msg_from_pos; msg_from_pos=$(_first_positional_message "$@")
@@ -138,15 +105,11 @@ _gpush_main() {
         [[ -z "$comment" ]] && comment="."
     fi
 
+    # Sanity checks
     if ! command -v git >/dev/null 2>&1; then log --Error "git not found"; log_exit; return 127; fi
     if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then log --Error "Not in git repo"; log_exit; return 128; fi
 
-    # --- Commit/Pull Submodules First ---
-    local dry_flag=0
-    [[ "$GP_DRY_RUN" == "$TRUE" ]] && dry_flag=1
-    _commit_submodules "$comment" "$dry_flag"
-
-    # --- Commit and Push Main Repo ---
+    # Repo context
     local repo branch upstream remote upstream_branch
     repo="$(basename "$(git rev-parse --show-toplevel)")"
     branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null || echo "(detached)")
@@ -158,44 +121,59 @@ _gpush_main() {
         upstream_branch="$branch"
     fi
 
+    # Announce mode (reads lib global g_dry_run)
+    if (( g_dry_run )); then
+        log --Info "MODE: Dry Run (use -x/--exec to apply)"
+    else
+        log --Info "MODE: Execute"
+    fi
     log --Info "repo=${repo} branch=${branch} remote=${remote:-'(none)'}"
-    (( GP_DRY_RUN )) && log --Info "DRY RUN — no changes made"
 
-    if (( ! GP_NO_ADD )); then _run $(( ! GP_DRY_RUN )) git add .; fi
+    # --- Commit/Pull Submodules First (if any dirty) ---
+    _commit_submodules "$comment"
+
+    # --- Main repo add/commit/push ---
+    if ! bool_is_true "$gp_no_add"; then
+        runCommand "git add ."
+    fi
 
     if ! git diff --cached --quiet; then
         local esc_msg; printf -v esc_msg %q "$comment"
-        local commit_cmd=(git commit -m "$esc_msg")
-        (( GP_AMEND ))   && commit_cmd=(git commit --amend -m "$esc_msg")
-        (( GP_SIGNOFF )) && commit_cmd+=(--signoff)
-        _run $(( ! GP_DRY_RUN )) "${commit_cmd[*]}" || { log --Error "commit failed"; return 1; }
+        local cmd="git commit -m $esc_msg"
+        if bool_is_true "$gp_amend";   then cmd="git commit --amend -m $esc_msg"; fi
+        if bool_is_true "$gp_signoff"; then cmd="$cmd --signoff"; fi
+        runCommand "$cmd" || { log --Error "commit failed"; log_exit; return 1; }
     else
         log --Info "Nothing staged to commit"
     fi
 
     if [[ -n "$remote" ]]; then
-        _run $(( ! GP_DRY_RUN )) git push -u "$remote" "$branch"
+        runCommand "git push -u \"$remote\" \"$branch\""
     else
         log --Error "No remote configured"
     fi
 
-    (( GP_PUSH_TAGS )) && _run $(( ! GP_DRY_RUN )) git push --tags
-    (( ! GP_DRY_RUN )) && log --Info "done ✓ (HEAD=$(git rev-parse --short HEAD 2>/dev/null))"
+    if bool_is_true "$gp_push_tags"; then
+        runCommand "git push --tags"
+    fi
+
+    if (( ! g_dry_run )); then
+        log --Info "done ✓ (HEAD=$(git rev-parse --short HEAD 2>/dev/null))"
+    fi
 
     log_exit
 }
 
-# --- Main Orchestration --------------------------------------------------------
+# --- Main Orchestration -------------------------------------------------------
 main() {
     load_dependencies
     if ! initializeScript "$@"; then
         return 1
     fi
-
     _gpush_main "$@"
 }
 
-# --- Entrypoint ----------------------------------------------------------------
+# --- Entrypoint ---------------------------------------------------------------
 if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
     source "${SCRIPT_DIR}/libs/lib_main.sh" "$@"
     main "$@"
