@@ -12,8 +12,6 @@ source "${SCRIPT_DIR}/libs/lib_core.sh"
 
 # --- Argument Definitions -----------------------------------------------------
 define_arguments() {
-    libCmd_add -t switch -f n --long dry-run   -v "gp_dry_run" -d "$FALSE" -m once -u "Show commands without executing"
-    libCmd_add -t switch -f a --long apply     -v "gp_apply"   -d "$FALSE" -m once -u "Actually execute commands (overrides dry-run)"
     libCmd_add -t switch -f f --long fetch     -v "gp_fetch"   -d "$FALSE" -m once -u "Run git fetch before pull"
     libCmd_add -t value  -f r --long remote    -v "gp_remote"  -d "origin" -m once -u "Remote name to pull from"
     libCmd_add -t value  -f b --long branch    -v "gp_branch"  -d ""       -m once -u "Branch name to pull (default: current)"
@@ -50,15 +48,7 @@ _gpull_main() {
     fi
 
     cmd="git pull $remote $branch"
-
-    if bool_is_true "$gp_apply"; then
-        runCommand "$cmd"
-    elif bool_is_true "$gp_dry_run"; then
-        log "DRY RUN — would execute: $cmd"
-    else
-        log "INFO — neither --apply nor --dry-run specified; defaulting to dry run"
-        log "Would execute: $cmd"
-    fi
+    runCommand "$cmd"
 
     log_exit
 }
