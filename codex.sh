@@ -82,6 +82,7 @@ define_arguments() {
 load_dependencies() {
     lib_require "lib_bool.sh"
     lib_require "lib_main.sh"
+    lib_require "lib_command.sh"
 }
 
 # --- Core Logic ----------------------------------------------------------------
@@ -225,8 +226,23 @@ _codex_main() {
         fi
     fi
 
-    log --Info "Command: $(printf '%q ' "${exec_cmd[@]}")"
-    "${exec_cmd[@]}"
+    local exec_cmd_str
+    printf -v exec_cmd_str '%q ' "${exec_cmd[@]}"
+    exec_cmd_str="${exec_cmd_str% }"
+    log --Info "Command: ${exec_cmd_str}"
+
+    local runner="run_command"
+    if ! declare -F "$runner" >/dev/null 2>&1; then
+        if declare -F runCommand >/dev/null 2>&1; then
+            runner="runCommand"
+        else
+            log --Error "run_command function is not available"
+            log_exit
+            return 1
+        fi
+    fi
+
+    "$runner" --exec "$exec_cmd_str"
     local exit_code=$?
 
     log_exit
