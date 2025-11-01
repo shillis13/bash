@@ -121,6 +121,55 @@ ACT
     )
 }
 
+test_workspace_extra_dirs() {
+    local tmp
+    tmp=$(mktemp -d)
+    (
+        set -euo pipefail
+        trap 'rm -rf "$tmp"' EXIT
+        setup_stub "$tmp"
+        export PATH="$tmp/bin:$PATH"
+        export CODEX_SPY_DIR="$tmp"
+        export CODEX_ADDITIONAL_ACCESS_DIRS="/opt/data,/var/logs/"
+        local workdir="$tmp/workdir"
+        mkdir -p "$workdir"
+        pushd "$workdir" >/dev/null
+        "$SCRIPT" --set CODEX_SPY_DIR="$CODEX_SPY_DIR" -- --noop
+        popd >/dev/null
+        local normalized_pwd
+        normalized_pwd=$(cd "$workdir" && pwd)
+        local normalized_tmp=""
+        if [[ -n "${TMPDIR:-}" ]]; then
+            normalized_tmp="$TMPDIR"
+            while [[ "$normalized_tmp" != "/" && "$normalized_tmp" == */ ]]; do
+                normalized_tmp="${normalized_tmp%/}"
+            done
+        fi
+        local -a expected_roots=("$normalized_pwd")
+        if [[ -n "$normalized_tmp" ]]; then
+            expected_roots+=("$normalized_tmp")
+        fi
+        expected_roots+=("/opt/data" "/var/logs")
+        local expected_json="["
+        local first=1
+        local root
+        for root in "${expected_roots[@]}"; do
+            [[ -z "$root" ]] && continue
+            local escaped="${root//\\/\\\\}"
+            escaped=${escaped//\"/\\\"}
+            if (( first )); then
+                first=0
+            else
+                expected_json+=","
+            fi
+            expected_json+="\"$escaped\""
+        done
+        expected_json+="]"
+        local expected_override="sandbox.workspace_write.writable_roots=${expected_json}"
+        grep -Fq -- "$expected_override" "$tmp/args.txt"
+    )
+}
+
 main() {
     local failures=0
     run_test "codex default scrub" test_default_scrub || failures=1
@@ -128,6 +177,7 @@ main() {
     run_test "codex read-only" test_read_only_mode || failures=1
     run_test "codex inherit-all" test_inherit_all || failures=1
     run_test "codex auto venv" test_auto_venv || failures=1
+    run_test "codex extra sandbox dirs" test_workspace_extra_dirs || failures=1
     return $failures
 }
 
