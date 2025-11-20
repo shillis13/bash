@@ -375,6 +375,14 @@ _codex_main() {
         path_value=$(_codex_build_path)
         local home_value="${HOME:-$(pwd)}"
         exec_cmd=(env -i "TERM=xterm-256color" "PYTHONUTF8=1" "LC_ALL=C.UTF-8" "LANG=C.UTF-8" "PATH=${path_value}" "HOME=${home_value}" "DISABLE_PROMPT_CMD=1")
+        
+        # Pass through terminal session identification variables if they exist
+        [[ -n "${TERM_SESSION_ID:-}" ]] && exec_cmd+=("TERM_SESSION_ID=${TERM_SESSION_ID}")
+        [[ -n "${ITERM_SESSION_ID:-}" ]] && exec_cmd+=("ITERM_SESSION_ID=${ITERM_SESSION_ID}")
+        [[ -n "${TERMINFO_DIRS:-}" ]] && exec_cmd+=("TERMINFO_DIRS=${TERMINFO_DIRS}")
+        [[ -n "${LC_TERMINAL:-}" ]] && exec_cmd+=("LC_TERMINAL=${LC_TERMINAL}")
+        [[ -n "${TERM_PROGRAM:-}" ]] && exec_cmd+=("TERM_PROGRAM=${TERM_PROGRAM}")
+        
         if [[ ${#keep_assignments[@]} -gt 0 ]]; then
             exec_cmd+=("${keep_assignments[@]}")
         fi

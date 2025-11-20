@@ -34,6 +34,16 @@ MCP_CONFIG='{
       "env": {
         "PATH": "/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
       }
+    },
+    "codex": {
+      "command": "/opt/homebrew/bin/codex",
+      "args": [
+        "--full-auto",
+        "mcp-server"
+      ],
+      "env": {
+        "PATH": "/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+      }
     }
   }
 }'
@@ -85,15 +95,30 @@ if [[ $# -gt 0 ]]; then
     CMD="$CMD \"$*\""
 fi
 
+# Setup logging
+LOG_DIR="$HOME/.claude/logs"
+mkdir -p "$LOG_DIR"
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+LOG_FILE="$LOG_DIR/claude_cli_${TIMESTAMP}.log"
+
+# Log the command being executed
+echo "=== Claude CLI Session: $(date) ===" >> "$LOG_FILE"
+echo "Command: $CMD" >> "$LOG_FILE"
+echo "====================================" >> "$LOG_FILE"
+echo "" >> "$LOG_FILE"
+
 # Handle stdin/stdout based on mode
 if [[ "$INTERACTIVE" == "true" ]]; then
-    # Interactive mode - let user interact
-    eval "$CMD"
+    # Interactive mode - let user interact, log output
+    eval "$CMD" 2>&1 | tee -a "$LOG_FILE"
 else
-    # Non-interactive mode - redirect stdin
+    # Non-interactive mode - redirect stdin, log output
     if [[ -n "$OUTPUT_FILE" ]]; then
-        eval "$CMD" </dev/null > "$OUTPUT_FILE" 2>&1
+        eval "$CMD" </dev/null 2>&1 | tee "$OUTPUT_FILE" >> "$LOG_FILE"
     else
-        eval "$CMD" </dev/null
+        eval "$CMD" </dev/null 2>&1 | tee -a "$LOG_FILE"
     fi
 fi
+
+echo "" >> "$LOG_FILE"
+echo "=== Session ended: $(date) ===" >> "$LOG_FILE"
