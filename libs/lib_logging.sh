@@ -97,7 +97,7 @@ libLogging_define_arguments() {
 # DESCRIPTION: Applies logic based on parsed logging arguments.
 # ------------------------------------------------------------------------------
 libLogging_apply_args() {
-    echo "Logging: libLogging_apply_args: SetLogLevel $LogLevelStr"
+    # echo "Logging: libLogging_apply_args: SetLogLevel $LogLevelStr"
     SetLogLevel "$LogLevelStr"
 }
 
