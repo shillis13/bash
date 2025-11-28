@@ -149,7 +149,7 @@ ToLogLvl_FromString() {
 # DESCRIPTION: Sets the global log level from a string.
 # ------------------------------------------------------------------------------
 SetLogLevel() {
-    echo "SetLogLevel: $1"
+    # echo "SetLogLevel: $1"
     LoggingLevel=$(ToLogLvl_FromString "$1")
 }
 

@@ -101,7 +101,7 @@ register_hooks() {
 # MAIN INITIALIZATION FUNCTION
 # ==============================================================================
 initializeScript() {
-    echo "Main: initializeScript"
+    #echo "Main: initializeScript"
     log_entry
     # --- 1. Define arguments by calling registered hook functions ---
     log --Debug " --- 1. Define arguments by calling registered hook functions: ${#g_arg_define_funcs[@]} ---"
