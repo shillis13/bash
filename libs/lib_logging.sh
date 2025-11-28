@@ -150,7 +150,7 @@ ToLogLvl_FromString() {
 # ------------------------------------------------------------------------------
 SetLogLevel() {
     echo "SetLogLevel: $1"
-    LogLevel=$(ToLogLvl_FromString "$1")
+    LoggingLevel=$(ToLogLvl_FromString "$1")
 }
 
 # ------------------------------------------------------------------------------
