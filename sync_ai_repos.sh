@@ -188,6 +188,9 @@ main() {
     [[ ${FAIL_COUNT} -gt 0 ]] && log_error "Failed: ${FAIL_COUNT}"
     [[ ${SKIP_COUNT} -gt 0 ]] && log_warn "Skipped: ${SKIP_COUNT}"
 
+    # Update repo status for prompt
+    ~/bin/ai/utils/repo_status.py -b --show-clean -q -o ~/.repo_status 2>/dev/null || true
+
     if [[ ${#FAILED_REPOS[@]} -gt 0 ]]; then
         echo ""
         log_error "Failed repos:"

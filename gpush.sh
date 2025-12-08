@@ -161,6 +161,9 @@ _gpush_main() {
         log --Info "done ✓ (HEAD=$(git rev-parse --short HEAD 2>/dev/null))"
     fi
 
+    # Update repo status for prompt
+    ~/bin/ai/utils/repo_status.py -b --show-clean -q -o ~/.repo_status 2>/dev/null || true
+
     log_exit
 }
 

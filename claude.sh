@@ -16,7 +16,7 @@ export CLAUDECODE=1
 [[ -n "${TERM_PROGRAM:-}" ]] && export TERM_PROGRAM
 
 # Use full path to claude executable
-CLAUDE_BIN="/opt/homebrew/bin/claude"
+CLAUDE_BIN="$HOME/.claude/local/claude"
 
 # Setup logging
 LOG_DIR="$HOME/.claude/logs"
