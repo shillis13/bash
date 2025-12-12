@@ -150,15 +150,36 @@ main() {
         "ai_chat_artifacts"
     )
 
+    # Additional standalone repos to sync
+    local additional_repos=(
+        "${HOME}/bin/bash"
+        "${HOME}/bin/python"
+    )
+
     # First sync all submodules
     log_info "Syncing ${#submodules[@]} submodules..."
-    
+
     for submod in "${submodules[@]}"; do
         local submod_path="${AI_ROOT}/${submod}"
         if [[ -d "${submod_path}" ]]; then
             sync_repo "${submod_path}" "${submod}"
         else
             log_warn "Submodule directory not found: ${submod}"
+            ((SKIP_COUNT++))
+        fi
+    done
+
+    # Sync additional standalone repos
+    log_info ""
+    log_info "Syncing ${#additional_repos[@]} additional repos..."
+
+    for repo_path in "${additional_repos[@]}"; do
+        local repo_name
+        repo_name=$(basename "${repo_path}")
+        if [[ -d "${repo_path}" ]]; then
+            sync_repo "${repo_path}" "${repo_name}"
+        else
+            log_warn "Additional repo not found: ${repo_path}"
             ((SKIP_COUNT++))
         fi
     done
