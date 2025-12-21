@@ -140,7 +140,9 @@ main() {
     cd "${AI_ROOT}"
     
     # Submodules defined in .gitmodules
+    # NOTE: Nested submodules must come BEFORE their parents
     local submodules=(
+        "ai_general/docs"
         "ai_chatgpt"
         "ai_claude"
         "ai_comms"
@@ -148,7 +150,6 @@ main() {
         "ai_memories"
         "ai_story_teller"
         "ai_chat_artifacts"
-        "ai_general/docs"
     )
 
     # Additional standalone repos to sync

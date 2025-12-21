@@ -1,0 +1,1 @@
+/Users/shawnhillis/bin/ai/cli/codex_cli.sh
