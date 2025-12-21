@@ -148,6 +148,7 @@ main() {
         "ai_memories"
         "ai_story_teller"
         "ai_chat_artifacts"
+        "ai_general/docs"
     )
 
     # Additional standalone repos to sync
