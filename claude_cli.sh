@@ -1,1 +1,0 @@
-/Users/shawnhillis/bin/ai/cli/claude_cli.sh
