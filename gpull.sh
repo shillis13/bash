@@ -21,6 +21,7 @@ define_arguments() {
 load_dependencies() {
     lib_require "lib_bool.sh"
     lib_require "lib_main.sh"
+    lib_require "lib_command.sh"
 }
 
 # --- Main Orchestration --------------------------------------------------------

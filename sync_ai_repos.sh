@@ -156,6 +156,7 @@ main() {
     local additional_repos=(
         "${HOME}/bin/bash"
         "${HOME}/bin/python"
+        "${HOME}/_configs"
     )
 
     # First sync all submodules
