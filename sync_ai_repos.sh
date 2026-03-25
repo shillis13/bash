@@ -140,11 +140,10 @@ main() {
     cd "${AI_ROOT}"
     
     # Submodules defined in .gitmodules
-    # NOTE: Nested submodules must come BEFORE their parents
+    # NOTE: ai_chatgpt and ai_claude were demoted from submodules (2026-03-22)
+    #       ai_general/docs was demoted from submodule (2026-03-22)
+    #       Platform dirs moved to ai_platforms/ (2026-03-22)
     local submodules=(
-        "ai_general/docs"
-        "ai_chatgpt"
-        "ai_claude"
         "ai_comms"
         "ai_general"
         "ai_memories"
