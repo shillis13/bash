@@ -5,7 +5,7 @@
 # Pull first (with rebase), then push
 #========================================
 
-set -e  # Exit on error
+set +e  # Continue on error — individual repo failures are tracked and reported at the end
 
 AI_ROOT="${HOME}/Documents/AI/ai_root"
 BRANCH="main"
