@@ -156,6 +156,8 @@ main() {
         "${HOME}/bin/bash"
         "${HOME}/bin/python"
         "${HOME}/_configs"
+        "${HOME}/AI/uai_toolkit"
+        "${HOME}/AI/ai_toolkit"
     )
 
     # First sync all submodules
