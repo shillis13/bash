@@ -7,7 +7,7 @@
 
 set +e  # Continue on error — individual repo failures are tracked and reported at the end
 
-AI_ROOT="${HOME}/Documents/AI/ai_root"
+AI_ROOT="${HOME}/AI/ai_root"
 BRANCH="main"
 REMOTE="origin"
 
