@@ -22,7 +22,7 @@ load_dependencies() {
     lib_require "lib_colors.sh"   
 
     # Initialize color mapping (env overrides OK)
-    LIB_COLOR_DRY=${LIB_COLOR_DRY:-$c_green}
+    LIB_COLOR_DRY=${LIB_COLOR_DRY:-$c_yellow}
     LIB_COLOR_EXEC=${LIB_COLOR_EXEC:-$c_blue}
     LIB_COLOR_RESET=${LIB_COLOR_RESET:-$c_reset}
 
